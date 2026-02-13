@@ -1,0 +1,10 @@
+{
+  "email": "cliente@test.com",
+  "password": "123456",
+  "role": "CLIENTE",
+  "nombre": "Juan",
+  "apellido": "Perez",
+  "dni": "12345678",
+  "phone": "1234567890",
+  "direccion": "Calle Falsa 123"
+}

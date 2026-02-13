@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile          Profile?
+  driverDocs       DriverDocument?
+  ridesAsClient    RideRequest[]   @relation("ClientRides")
+  offersAsDriver   Offer[]         @relation("DriverOffers")
+  ratingsGiven     Rating[]        @relation("RaterRatings")
+  ratingsReceived  Rating[]        @relation("RateeRatings")
+
+  @@map("users")
+}
+
+model Profile {
+  id        String  @id @default(uuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  nombre    String
+  apellido  String
+  dni       String  @unique
+  direccion String?
+  phone     String?
+
+  @@map("profiles")
+}
+
+model DriverDocument {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  licenciaUrl     String?
+  cedulaUrl       String?
+  habilitacionUrl String?
+  maxPassengers   Int?
+  isVerified      Boolean   @default(false)
+  verifiedAt      DateTime?
+
+  @@map("driver_documents")
+}
+
+model RideRequest {
+  id              String     @id @default(uuid())
+  clientId        String
+  client          User       @relation("ClientRides", fields: [clientId], references: [id])
+
+  originAddress   String
+  destAddress     String
+  status          RideStatus @default(PENDING)
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  offers          Offer[]
+  selectedOfferId String?    @unique
+  selectedOffer   Offer?     @relation("SelectedOffer", fields: [selectedOfferId], references: [id])
+  rating          Rating?
+
+  @@map("ride_requests")
+}
+
+model Offer {
+  id                String      @id @default(uuid())
+  rideRequestId     String
+  rideRequest       RideRequest @relation(fields: [rideRequestId], references: [id], onDelete: Cascade)
+
+  driverId          String
+  driver            User        @relation("DriverOffers", fields: [driverId], references: [id])
+
+  estimatedMinutes  Int
+  quotedPrice       Float
+  status            OfferStatus @default(PENDING)
+
+  createdAt         DateTime    @default(now())
+
+  selectedForRide   RideRequest? @relation("SelectedOffer")
+
+  @@map("offers")
+}
+
+model Rating {
+  id          String      @id @default(uuid())
+  rideId      String      @unique
+  ride        RideRequest @relation(fields: [rideId], references: [id])
+
+  fromUserId  String
+  fromUser    User        @relation("RaterRatings", fields: [fromUserId], references: [id])
+
+  toUserId    String
+  toUser      User        @relation("RateeRatings", fields: [toUserId], references: [id])
+
+  score       Int
+  comment     String?
+
+  createdAt   DateTime    @default(now())
+
+  @@map("ratings")
+}
+
+enum Role {
+  CLIENTE
+  CHOFER
+}
+
+enum RideStatus {
+  PENDING
+  MATCHED
+  COMPLETED
+  CANCELLED
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}

@@ -1,0 +1,10 @@
+{
+  "email": "chofer@test.com",
+  "password": "123456",
+  "role": "CHOFER",
+  "nombre": "Carlos",
+  "apellido": "Rodriguez",
+  "dni": "87654321",
+  "phone": "0987654321",
+  "direccion": "Av. Principal 456"
+}
