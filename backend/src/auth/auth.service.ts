@@ -53,9 +53,22 @@ export class AuthService {
             direccion: registerDto.direccion,
           },
         },
+        ...(registerDto.role === Role.CHOFER && {
+          driverDocs: {
+            create: {
+              licenciaUrl: registerDto.licenciaUrl,
+              cedulaUrl: registerDto.cedulaUrl,
+              habilitacionUrl: registerDto.habilitacionUrl,
+              maxPassengers: registerDto.maxPassengers
+                ? parseInt(registerDto.maxPassengers, 10)
+                : null,
+            },
+          },
+        }),
       },
       include: {
         profile: true,
+        driverDocs: true,
       },
     });
 

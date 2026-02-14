@@ -76,9 +76,7 @@ export class UsersService {
       where: { userId },
     });
 
-    const maxPassengers = uploadDto.maxPassengers
-      ? parseInt(uploadDto.maxPassengers, 10)
-      : undefined;
+    const maxPassengers = uploadDto.maxPassengers;
 
     if (existingDoc) {
       // Update existing document
@@ -129,7 +127,10 @@ export class UsersService {
 
     return await this.prisma.driverDocument.update({
       where: { userId: driverId },
-      data: { isVerified },
+      data: {
+        isVerified,
+        verifiedAt: isVerified ? new Date() : null,
+      },
     });
   }
 

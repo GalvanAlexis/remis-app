@@ -53,13 +53,27 @@ model DriverDocument {
   isVerified      Boolean   @default(false)
   verifiedAt      DateTime?
 
+  // Estados operativos
+  isOnline        Boolean   @default(false)
+  onlyRegistered  Boolean   @default(false)
+
+  // Datos del Vehículo
+  vehicleModel    String?
+  vehiclePlate    String?
+  vehicleColor    String?
+
   @@map("driver_documents")
 }
 
 model RideRequest {
   id              String     @id @default(uuid())
-  clientId        String
-  client          User       @relation("ClientRides", fields: [clientId], references: [id])
+  clientId        String?
+  client          User?      @relation("ClientRides", fields: [clientId], references: [id])
+
+  // Campos para Invitados y Detalles
+  guestName       String?
+  guestPhone      String?
+  detalle         String?    // Info opcional (ej: "Piso 2, dpto B")
 
   originAddress   String
   destAddress     String
@@ -117,6 +131,7 @@ model Rating {
 enum Role {
   CLIENTE
   CHOFER
+  ADMIN
 }
 
 enum RideStatus {

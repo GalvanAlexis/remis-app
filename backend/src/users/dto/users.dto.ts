@@ -1,4 +1,5 @@
-import { IsString, IsOptional, IsUrl } from 'class-validator';
+import { IsString, IsOptional, IsUrl, IsNumber, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class UpdateProfileDto {
   @IsString()
@@ -31,9 +32,11 @@ export class UploadDriverDocumentsDto {
   @IsOptional()
   habilitacionUrl?: string;
 
-  @IsString()
+  @IsNumber()
+  @Min(1)
   @IsOptional()
-  maxPassengers?: string; // Will be converted to Int
+  @Type(() => Number)
+  maxPassengers?: number;
 }
 
 export class ProfileResponseDto {

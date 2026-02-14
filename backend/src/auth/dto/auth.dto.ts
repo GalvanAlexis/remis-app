@@ -1,4 +1,10 @@
-import { IsEmail, IsString, MinLength, IsEnum } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsEnum,
+  IsOptional,
+} from 'class-validator';
 import { Role } from '@prisma/client';
 
 export class RegisterDto {
@@ -22,10 +28,29 @@ export class RegisterDto {
   dni: string;
 
   @IsString()
+  @IsOptional()
   phone?: string;
 
   @IsString()
+  @IsOptional()
   direccion?: string;
+
+  // Campos específicos de Chofer
+  @IsString()
+  @IsOptional()
+  licenciaUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  cedulaUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  habilitacionUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  maxPassengers?: string; // Lo recibimos como string y lo convertimos
 }
 
 export class LoginDto {

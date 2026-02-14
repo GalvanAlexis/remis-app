@@ -51,11 +51,12 @@ export class UsersController {
   }
 
   @Post('driver/:driverId/verify')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
   async verifyDriver(
     @Param('driverId') driverId: string,
     @Body('isVerified') isVerified: boolean,
   ) {
-    // TODO: Add admin role guard
     return this.usersService.verifyDriver(driverId, isVerified);
   }
 }
