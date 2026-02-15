@@ -77,24 +77,19 @@ Ver carpeta `/docs` para:
 - Esquema de base de datos
 - Guías de deployment
 
-## 🔐 Variables de Entorno
-
 ### Backend (.env)
 
 ```
-DATABASE_URL="postgresql://user:password@localhost:5432/remis"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/remis"
 JWT_SECRET="your-secret-key"
-JWT_REFRESH_SECRET="your-refresh-secret"
-CLOUDINARY_CLOUD_NAME="your-cloud-name"
-CLOUDINARY_API_KEY="your-api-key"
-CLOUDINARY_API_SECRET="your-api-secret"
+PORT=3000
 ```
 
 ### Mobile (.env)
 
 ```
-EXPO_PUBLIC_API_URL="http://localhost:3000/api/v1"
-EXPO_PUBLIC_WS_URL="http://localhost:3000"
+EXPO_PUBLIC_API_URL="http://192.168.1.100:3000"
+EXPO_PUBLIC_WS_URL="http://192.168.1.100:3000"
 ```
 
 ## 🚢 Deployment
