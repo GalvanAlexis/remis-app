@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -6,20 +6,33 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Image,
+  TouchableOpacity,
 } from "react-native";
-import { Text, TextInput, Button, Surface, Divider } from "react-native-paper";
+import {
+  Text,
+  TextInput,
+  Button,
+  Surface,
+  Divider,
+  IconButton,
+} from "react-native-paper";
 import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../../hooks/useAuth";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useAppTheme } from "../../context/ThemeContext";
+import { ThemeSelector } from "../../components/ThemeSelector";
 
 export default function RegisterChoferScreen() {
+  const { theme, colors, isDark } = useAppTheme();
   const [formData, setFormData] = useState({
-    email: "",
+    username: "",
     password: "",
     nombre: "",
     apellido: "",
     dni: "",
-    phone: "",
-    direccion: "",
+    profilePictureUrl: "",
     licenciaUrl: "",
     cedulaUrl: "",
     habilitacionUrl: "",
@@ -27,41 +40,95 @@ export default function RegisterChoferScreen() {
     vehicleModel: "",
     vehiclePlate: "",
     vehicleColor: "",
+    themePreference: theme,
   });
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const router = useRouter();
 
+  // Keep themePreference in sync with selected theme
+  useEffect(() => {
+    setFormData((prev) => ({ ...prev, themePreference: theme }));
+  }, [theme]);
+
+  const handlePickImage = async (useCamera: boolean) => {
+    let result;
+    if (useCamera) {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Error", "Se requiere permiso de cámara para esta acción");
+        return;
+      }
+      result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+    } else {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Error", "Se requiere permiso de galería para esta acción");
+        return;
+      }
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+    }
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setFormData({ ...formData, profilePictureUrl: result.assets[0].uri });
+    }
+  };
+
   const handleRegister = async () => {
-    // Validate fields
+    // Validate all fields
+    const {
+      username,
+      password,
+      nombre,
+      apellido,
+      dni,
+      profilePictureUrl,
+      licenciaUrl,
+      cedulaUrl,
+      habilitacionUrl,
+      vehicleModel,
+      vehiclePlate,
+      vehicleColor,
+    } = formData;
+
     if (
-      !formData.email ||
-      !formData.password ||
-      !formData.nombre ||
-      !formData.apellido ||
-      !formData.dni ||
-      !formData.phone ||
-      !formData.direccion ||
-      !formData.licenciaUrl ||
-      !formData.cedulaUrl ||
-      !formData.habilitacionUrl
+      !username ||
+      !password ||
+      !nombre ||
+      !apellido ||
+      !dni ||
+      !profilePictureUrl ||
+      !licenciaUrl ||
+      !cedulaUrl ||
+      !habilitacionUrl ||
+      !vehicleModel ||
+      !vehiclePlate ||
+      !vehicleColor
     ) {
       Alert.alert(
         "Error",
-        "Por favor complete todos los campos de documentación",
+        "Todos los campos son obligatorios, incluyendo la foto de perfil y la documentación.",
       );
       return;
     }
 
     setLoading(true);
     try {
-      // TODO: Implement actual image picker and upload logic as per 05-frontend-specifications.md
-      // Currently using TextInput placeholders for licenciaUrl, cedulaUrl, and habilitacionUrl.
       await register({
         ...formData,
         role: "CHOFER",
       });
-      // Navigation is handled by root layout
     } catch (error: any) {
       Alert.alert(
         "Error",
@@ -75,27 +142,87 @@ export default function RegisterChoferScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Surface style={styles.surface} elevation={4}>
-          <Text variant="headlineSmall" style={styles.title}>
+        <Surface
+          style={[styles.surface, { backgroundColor: colors.surface }]}
+          elevation={2}
+        >
+          <Text
+            variant="headlineSmall"
+            style={[styles.title, { color: colors.primary }]}
+          >
             Registro - Chofer
           </Text>
 
+          <ThemeSelector />
+
           <Divider style={styles.divider} />
 
-          <Text variant="titleMedium" style={styles.sectionTitle}>
+          <Surface style={styles.profilePicContainer} elevation={0}>
+            {formData.profilePictureUrl ? (
+              <Image
+                source={{ uri: formData.profilePictureUrl }}
+                style={[styles.profilePic, { borderColor: colors.primary }]}
+              />
+            ) : (
+              <View
+                style={[
+                  styles.profilePicPlaceholder,
+                  {
+                    backgroundColor: isDark ? "#333" : "#f0f0f0",
+                    borderColor: colors.divider,
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="camera"
+                  size={50}
+                  color={colors.placeholder}
+                />
+              </View>
+            )}
+            <View style={styles.imageButtons}>
+              <IconButton
+                icon="camera"
+                mode="contained"
+                containerColor={colors.primary}
+                iconColor="white"
+                onPress={() => handlePickImage(true)}
+              />
+              <IconButton
+                icon="image"
+                mode="contained"
+                containerColor={colors.primary}
+                iconColor="white"
+                onPress={() => handlePickImage(false)}
+              />
+            </View>
+            <Text
+              style={[styles.photoLabel, { color: colors.text, opacity: 0.6 }]}
+            >
+              Foto de Perfil (Obligatoria)
+            </Text>
+          </Surface>
+
+          <Divider style={styles.divider} />
+
+          <Text
+            variant="titleMedium"
+            style={[styles.sectionTitle, { color: colors.primary }]}
+          >
             Datos Personales
           </Text>
 
           <TextInput
-            label="Email"
-            value={formData.email}
-            onChangeText={(text) => setFormData({ ...formData, email: text })}
+            label="Nombre de usuario"
+            value={formData.username}
+            onChangeText={(text) =>
+              setFormData({ ...formData, username: text })
+            }
             mode="outlined"
-            keyboardType="email-address"
             autoCapitalize="none"
             style={styles.input}
           />
@@ -108,7 +235,10 @@ export default function RegisterChoferScreen() {
             }
             mode="outlined"
             secureTextEntry
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.surface }]}
+            textColor={colors.text}
+            outlineColor={colors.divider}
+            activeOutlineColor={colors.primary}
           />
 
           <View style={styles.row}>
@@ -119,7 +249,13 @@ export default function RegisterChoferScreen() {
                 setFormData({ ...formData, nombre: text })
               }
               mode="outlined"
-              style={[styles.input, { flex: 1, marginRight: 8 }]}
+              style={[
+                styles.input,
+                { flex: 1, marginRight: 8, backgroundColor: colors.surface },
+              ]}
+              textColor={colors.text}
+              outlineColor={colors.divider}
+              activeOutlineColor={colors.primary}
             />
             <TextInput
               label="Apellido"
@@ -128,7 +264,13 @@ export default function RegisterChoferScreen() {
                 setFormData({ ...formData, apellido: text })
               }
               mode="outlined"
-              style={[styles.input, { flex: 1 }]}
+              style={[
+                styles.input,
+                { flex: 1, backgroundColor: colors.surface },
+              ]}
+              textColor={colors.text}
+              outlineColor={colors.divider}
+              activeOutlineColor={colors.primary}
             />
           </View>
 
@@ -138,30 +280,17 @@ export default function RegisterChoferScreen() {
             onChangeText={(text) => setFormData({ ...formData, dni: text })}
             mode="outlined"
             keyboardType="numeric"
-            style={styles.input}
-          />
-
-          <TextInput
-            label="Teléfono"
-            value={formData.phone}
-            onChangeText={(text) => setFormData({ ...formData, phone: text })}
-            mode="outlined"
-            keyboardType="phone-pad"
-            style={styles.input}
-          />
-
-          <TextInput
-            label="Dirección"
-            value={formData.direccion}
-            onChangeText={(text) =>
-              setFormData({ ...formData, direccion: text })
-            }
-            mode="outlined"
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.surface }]}
+            textColor={colors.text}
+            outlineColor={colors.divider}
+            activeOutlineColor={colors.primary}
           />
 
           <Divider style={styles.divider} />
-          <Text variant="titleMedium" style={styles.sectionTitle}>
+          <Text
+            variant="titleMedium"
+            style={[styles.sectionTitle, { color: colors.primary }]}
+          >
             Documentación y Vehículo
           </Text>
 
@@ -172,7 +301,10 @@ export default function RegisterChoferScreen() {
               setFormData({ ...formData, licenciaUrl: text })
             }
             mode="outlined"
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.surface }]}
+            textColor={colors.text}
+            outlineColor={colors.divider}
+            activeOutlineColor={colors.primary}
             placeholder="Ej: A123456"
           />
 
@@ -183,7 +315,10 @@ export default function RegisterChoferScreen() {
               setFormData({ ...formData, cedulaUrl: text })
             }
             mode="outlined"
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.surface }]}
+            textColor={colors.text}
+            outlineColor={colors.divider}
+            activeOutlineColor={colors.primary}
             placeholder="Nº de Cédula"
           />
 
@@ -194,7 +329,10 @@ export default function RegisterChoferScreen() {
               setFormData({ ...formData, habilitacionUrl: text })
             }
             mode="outlined"
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.surface }]}
+            textColor={colors.text}
+            outlineColor={colors.divider}
+            activeOutlineColor={colors.primary}
             placeholder="Nº Habilitación Municipal"
           />
 
@@ -206,8 +344,10 @@ export default function RegisterChoferScreen() {
             }
             mode="outlined"
             keyboardType="numeric"
-            style={styles.input}
-            placeholder="Ej: 1 (Moto), 4 (Auto), 15 (Combi)..."
+            style={[styles.input, { backgroundColor: colors.surface }]}
+            textColor={colors.text}
+            outlineColor={colors.divider}
+            activeOutlineColor={colors.primary}
           />
 
           <TextInput
@@ -217,7 +357,10 @@ export default function RegisterChoferScreen() {
               setFormData({ ...formData, vehicleModel: text })
             }
             mode="outlined"
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.surface }]}
+            textColor={colors.text}
+            outlineColor={colors.divider}
+            activeOutlineColor={colors.primary}
             placeholder="Ej: Fiat Cronos, Toyota Corolla..."
           />
 
@@ -229,7 +372,13 @@ export default function RegisterChoferScreen() {
                 setFormData({ ...formData, vehiclePlate: text })
               }
               mode="outlined"
-              style={[styles.input, { flex: 1, marginRight: 8 }]}
+              style={[
+                styles.input,
+                { flex: 1, marginRight: 8, backgroundColor: colors.surface },
+              ]}
+              textColor={colors.text}
+              outlineColor={colors.divider}
+              activeOutlineColor={colors.primary}
               autoCapitalize="characters"
               placeholder="Ej: AF123BC"
             />
@@ -240,7 +389,13 @@ export default function RegisterChoferScreen() {
                 setFormData({ ...formData, vehicleColor: text })
               }
               mode="outlined"
-              style={[styles.input, { flex: 1 }]}
+              style={[
+                styles.input,
+                { flex: 1, backgroundColor: colors.surface },
+              ]}
+              textColor={colors.text}
+              outlineColor={colors.divider}
+              activeOutlineColor={colors.primary}
               placeholder="Blanco"
             />
           </View>
@@ -251,14 +406,17 @@ export default function RegisterChoferScreen() {
             loading={loading}
             disabled={loading}
             style={styles.button}
+            buttonColor={colors.primary}
+            textColor="white"
           >
-            Registrarme
+            Registrarme como Chofer
           </Button>
 
           <Button
             mode="text"
             onPress={() => router.back()}
             style={styles.backButton}
+            textColor={colors.text}
           >
             Volver
           </Button>
@@ -271,48 +429,72 @@ export default function RegisterChoferScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 20,
+    padding: 15,
     paddingTop: 40,
     paddingBottom: 40,
   },
   surface: {
-    padding: 25,
-    borderRadius: 15,
+    padding: 20,
+    borderRadius: 20,
   },
   title: {
     textAlign: "center",
     fontWeight: "bold",
-    color: "#03dac6",
-    marginBottom: 5,
+    marginBottom: 20,
+  },
+  profilePicContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+    backgroundColor: "transparent",
+  },
+  profilePic: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+  },
+  profilePicPlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderStyle: "dashed",
+  },
+  imageButtons: {
+    flexDirection: "row",
+    marginTop: -20,
+    justifyContent: "center",
+  },
+  photoLabel: {
+    marginTop: 10,
+    color: "#aaa",
+    fontSize: 12,
   },
   sectionTitle: {
     marginTop: 10,
     marginBottom: 10,
-    fontWeight: "600",
-    color: "#666",
+    fontWeight: "bold",
+    opacity: 0.8,
   },
   row: {
     flexDirection: "row",
     marginBottom: 0,
   },
-  note: {
-    textAlign: "center",
-    color: "#666",
-    marginBottom: 15,
-  },
   divider: {
-    marginBottom: 15,
+    marginVertical: 15,
   },
   input: {
     marginBottom: 12,
   },
   button: {
-    marginTop: 15,
-    paddingVertical: 5,
+    marginTop: 25,
+    paddingVertical: 8,
+    borderRadius: 12,
   },
   backButton: {
     marginTop: 10,

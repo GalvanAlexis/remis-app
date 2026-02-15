@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -10,30 +10,36 @@ import {
 import { Text, TextInput, Button, Surface, Divider } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../hooks/useAuth";
-
+import { useAppTheme } from "../../context/ThemeContext";
+import { ThemeSelector } from "../../components/ThemeSelector";
 export default function RegisterClienteScreen() {
+  const { theme, colors, isDark } = useAppTheme();
   const [formData, setFormData] = useState({
-    email: "",
+    username: "",
     password: "",
     nombre: "",
     apellido: "",
     dni: "",
-    phone: "",
     direccion: "",
+    themePreference: theme,
   });
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const router = useRouter();
 
+  // Keep themePreference in sync with selected theme
+  useEffect(() => {
+    setFormData((prev) => ({ ...prev, themePreference: theme }));
+  }, [theme]);
+
   const handleRegister = async () => {
     // Validate fields
     if (
-      !formData.email ||
+      !formData.username ||
       !formData.password ||
       !formData.nombre ||
       !formData.apellido ||
       !formData.dni ||
-      !formData.phone ||
       !formData.direccion
     ) {
       Alert.alert("Error", "Por favor complete todos los campos");
@@ -60,38 +66,67 @@ export default function RegisterClienteScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Surface style={styles.surface} elevation={4}>
-          <Text variant="headlineSmall" style={styles.title}>
+        <Surface
+          style={[styles.surface, { backgroundColor: colors.surface }]}
+          elevation={2}
+        >
+          <Text
+            variant="headlineSmall"
+            style={[styles.title, { color: colors.primary }]}
+          >
             Registro - Cliente
           </Text>
 
-          <Surface style={styles.infoBox} elevation={1}>
-            <Text variant="titleMedium" style={styles.benefitTitle}>
+          <Surface
+            style={[
+              styles.infoBox,
+              {
+                backgroundColor: isDark ? "#333" : "#f0f0ff",
+                borderLeftColor: colors.primary,
+              },
+            ]}
+            elevation={1}
+          >
+            <Text
+              variant="titleMedium"
+              style={[styles.benefitTitle, { color: colors.primary }]}
+            >
               ¿Por qué registrarte?
             </Text>
-            <Text variant="bodySmall" style={styles.benefitText}>
+            <Text
+              variant="bodySmall"
+              style={[styles.benefitText, { color: colors.text }]}
+            >
               En ciertos horarios o circunstancias, el chofer puede preferir un
-              cliente <Text style={{ fontWeight: "bold" }}>REGISTRADO</Text>{" "}
+              cliente{" "}
+              <Text style={{ fontWeight: "bold", color: colors.primary }}>
+                REGISTRADO
+              </Text>{" "}
               para disminuir la posibilidad de inconvenientes.
               {"\n\n"}
               Al mismo tiempo, el Cliente Registrado obtiene los datos{" "}
-              <Text style={{ fontWeight: "bold" }}>COMPLETOS</Text> del chofer.
-              No es obligatorio registrarse para utilizar esta APP.
+              <Text style={{ fontWeight: "bold", color: colors.primary }}>
+                COMPLETOS
+              </Text>{" "}
+              del chofer. No es obligatorio registrarse para utilizar esta APP.
             </Text>
           </Surface>
+
+          <ThemeSelector />
 
           <Divider style={styles.divider} />
 
           <TextInput
-            label="Email"
-            value={formData.email}
-            onChangeText={(text) => setFormData({ ...formData, email: text })}
+            label="Nombre de usuario"
+            value={formData.username}
+            onChangeText={(text) =>
+              setFormData({ ...formData, username: text })
+            }
             mode="outlined"
-            keyboardType="email-address"
             autoCapitalize="none"
             style={styles.input}
           />
@@ -138,22 +173,16 @@ export default function RegisterClienteScreen() {
           />
 
           <TextInput
-            label="Teléfono"
-            value={formData.phone}
-            onChangeText={(text) => setFormData({ ...formData, phone: text })}
-            mode="outlined"
-            keyboardType="phone-pad"
-            style={styles.input}
-          />
-
-          <TextInput
             label="Dirección"
             value={formData.direccion}
             onChangeText={(text) =>
               setFormData({ ...formData, direccion: text })
             }
             mode="outlined"
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.surface }]}
+            textColor={colors.text}
+            outlineColor={colors.divider}
+            activeOutlineColor={colors.primary}
           />
 
           <Button
@@ -162,6 +191,8 @@ export default function RegisterClienteScreen() {
             loading={loading}
             disabled={loading}
             style={styles.button}
+            buttonColor={colors.primary}
+            textColor="white"
           >
             Registrarme
           </Button>
@@ -170,6 +201,7 @@ export default function RegisterClienteScreen() {
             mode="text"
             onPress={() => router.back()}
             style={styles.backButton}
+            textColor={colors.text}
           >
             Volver
           </Button>
@@ -182,7 +214,6 @@ export default function RegisterClienteScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
   },
   scrollContent: {
     flexGrow: 1,
@@ -198,23 +229,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 5,
     fontWeight: "bold",
-    color: "#6200ee",
   },
   infoBox: {
     padding: 15,
     borderRadius: 10,
-    backgroundColor: "#f0f0ff",
     marginBottom: 20,
     borderLeftWidth: 4,
-    borderLeftColor: "#6200ee",
   },
   benefitTitle: {
-    color: "#6200ee",
     fontWeight: "bold",
     marginBottom: 5,
   },
   benefitText: {
-    color: "#444",
     lineHeight: 18,
   },
   divider: {

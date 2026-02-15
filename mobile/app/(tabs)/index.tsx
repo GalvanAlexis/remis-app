@@ -23,8 +23,11 @@ import {
 import { useAuth } from "../../hooks/useAuth";
 import { useRouter } from "expo-router";
 import { socketService } from "../../services/socket.service";
+import { useAppTheme } from "../../context/ThemeContext";
+import { useSocket } from "../../hooks/useSocket";
 
 export default function HomeScreen() {
+  const { theme, colors, isDark } = useAppTheme();
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
 
@@ -56,52 +59,63 @@ export default function HomeScreen() {
   const [ratingScore, setRatingScore] = useState(5);
   const [ratingComment, setRatingComment] = useState("");
 
-  useEffect(() => {
-    const socket = socketService.connect();
+  // --- Socket Events Logic ---
+  const socketEvents = React.useMemo(() => {
+    const events: any[] = [];
 
     if (user?.role === "CHOFER") {
-      socket.on("new_ride_request", (ride: any) => {
-        setRideRequests((prev) => [ride, ...prev]);
+      events.push({
+        name: "new_ride_request",
+        handler: (ride: any) => setRideRequests((prev) => [ride, ...prev]),
       });
-      socket.on("offer_accepted", (ride: any) => {
-        Alert.alert(
-          "¡Éxito!",
-          "Tu oferta ha sido aceptada. Dirígete al origen.",
-        );
-        setIsOnline(false);
-        setActiveRide(ride);
-        setRideRequests((prev) => prev.filter((r) => r.id !== ride.id));
+      events.push({
+        name: "offer_accepted",
+        handler: (ride: any) => {
+          Alert.alert(
+            "¡Éxito!",
+            "Tu oferta ha sido aceptada. Dirígete al origen.",
+          );
+          setIsOnline(false);
+          setActiveRide(ride);
+          setRideRequests((prev) => prev.filter((r) => r.id !== ride.id));
+        },
       });
     } else {
-      socket.on("new_offer", (offer: any) => {
-        setOffers((prev) => [...prev, offer]);
+      events.push({
+        name: "new_offer",
+        handler: (offer: any) => setOffers((prev) => [...prev, offer]),
       });
-      socket.on("ride_matched", (ride: any) => {
-        setActiveRide(ride);
-        setOffers([]);
-        Alert.alert("Viaje Confirmado", "El chofer está en camino.");
+      events.push({
+        name: "ride_matched",
+        handler: (ride: any) => {
+          setActiveRide(ride);
+          setOffers([]);
+          Alert.alert("Viaje Confirmado", "El chofer está en camino.");
+        },
       });
-      socket.on("ride_completed", (ride: any) => {
-        setActiveRide(ride);
-        setRatingDialogVisible(true);
+      events.push({
+        name: "ride_completed",
+        handler: (ride: any) => {
+          setActiveRide(ride);
+          setRatingDialogVisible(true);
+        },
       });
     }
 
-    socket.on("ride_completed_global", (ride: any) => {
-      if (user?.role === "CHOFER" && activeRide?.id === ride.id) {
-        setRatingDialogVisible(true);
-      }
+    events.push({
+      name: "ride_completed_global",
+      handler: (ride: any) => {
+        if (user?.role === "CHOFER" && activeRide?.id === ride.id) {
+          setRatingDialogVisible(true);
+        }
+      },
     });
 
-    return () => {
-      socketService.off("new_ride_request");
-      socketService.off("offer_accepted");
-      socketService.off("new_offer");
-      socketService.off("ride_matched");
-      socketService.off("ride_completed");
-      socketService.off("ride_completed_global");
-    };
-  }, [user, activeRide]);
+    return events;
+  }, [user?.role, activeRide?.id]);
+
+  // Se encarga de la conexión, handshake auth y registro de eventos
+  useSocket(socketEvents);
 
   const handleFinishRide = () => {
     socketService.emit("finish_ride", { rideId: activeRide.id });
@@ -213,24 +227,31 @@ export default function HomeScreen() {
 
   const renderActiveRideCard = () => (
     <Card
-      style={[styles.mainSurface, { borderColor: "#2563EB", borderWidth: 2 }]}
+      style={[
+        styles.mainSurface,
+        {
+          borderColor: colors.primary,
+          borderWidth: 2,
+          backgroundColor: colors.surface,
+        },
+      ]}
     >
       <Card.Title
         title="Viaje Confirmado"
         subtitle="El chofer está en camino"
-        titleStyle={{ color: "#FFFFFF" }}
-        subtitleStyle={{ color: "#94A3B8" }}
+        titleStyle={{ color: colors.text }}
+        subtitleStyle={{ color: colors.text, opacity: 0.7 }}
       />
       <Card.Content>
         <Text
           variant="bodyLarge"
-          style={{ color: "#FFFFFF", fontWeight: "bold" }}
+          style={{ color: colors.text, fontWeight: "bold" }}
         >
           Vehículo:{" "}
           {activeRide.selectedOffer?.driver?.driverDocument?.vehicleModel ||
             "Transporte Habilitado"}
         </Text>
-        <Text variant="bodyMedium" style={{ color: "#94A3B8" }}>
+        <Text variant="bodyMedium" style={{ color: colors.text, opacity: 0.7 }}>
           Patente:{" "}
           {activeRide.selectedOffer?.driver?.driverDocument?.vehiclePlate ||
             "N/A"}
@@ -245,7 +266,10 @@ export default function HomeScreen() {
   const renderClientView = () => (
     <View style={styles.viewContainer}>
       <View style={styles.header}>
-        <Text variant="headlineSmall" style={styles.welcomeText}>
+        <Text
+          variant="headlineSmall"
+          style={[styles.welcomeText, { color: colors.text }]}
+        >
           Hola, {user?.profile?.nombre || "Cliente"}! 👋
         </Text>
         {!isAuthenticated && (
@@ -261,50 +285,54 @@ export default function HomeScreen() {
 
       {!activeRide ? (
         <>
-          <Surface style={styles.mainSurface} elevation={0}>
-            <Text variant="titleMedium" style={styles.surfaceTitle}>
+          <Surface
+            style={[styles.mainSurface, { backgroundColor: colors.surface }]}
+            elevation={1}
+          >
+            <Text
+              variant="titleMedium"
+              style={[styles.surfaceTitle, { color: colors.text }]}
+            >
               ¿A dónde vamos?
             </Text>
             <TextInput
               label="Origen"
               value={origin}
               onChangeText={setOrigin}
-              mode="flat"
+              mode="outlined"
               style={styles.input}
-              textColor="#FFFFFF"
-              placeholderTextColor="#64748B"
-              underlineColor="#334155"
-              activeUnderlineColor="#2563EB"
+              textColor={colors.text}
+              outlineColor={colors.divider}
+              activeOutlineColor={colors.primary}
             />
             <TextInput
               label="Destino"
               value={destination}
               onChangeText={setDestination}
-              mode="flat"
+              mode="outlined"
               style={styles.input}
-              textColor="#FFFFFF"
-              placeholderTextColor="#64748B"
-              underlineColor="#334155"
-              activeUnderlineColor="#2563EB"
+              textColor={colors.text}
+              outlineColor={colors.divider}
+              activeOutlineColor={colors.primary}
             />
             <TextInput
               label="Detalle Opcional"
               value={detalle}
               onChangeText={setDetalle}
-              mode="flat"
+              mode="outlined"
               style={styles.input}
               placeholder="Nº de puerta, indicaciones..."
-              textColor="#FFFFFF"
-              placeholderTextColor="#64748B"
-              underlineColor="#334155"
-              activeUnderlineColor="#2563EB"
+              textColor={colors.text}
+              outlineColor={colors.divider}
+              activeOutlineColor={colors.primary}
             />
             <Button
               mode="contained"
               onPress={handleRequestRide}
               style={styles.actionButton}
-              buttonColor="#2563EB"
+              buttonColor={colors.primary}
               contentStyle={{ height: 50 }}
+              textColor="white"
             >
               Pedir Remis Ahora
             </Button>
@@ -370,7 +398,7 @@ export default function HomeScreen() {
           <Text
             variant="bodyMedium"
             style={{
-              color: isOnline ? "#10B981" : "#EF4444",
+              color: isOnline ? colors.secondary : "#EF4444",
               fontWeight: "bold",
             }}
           >
@@ -380,7 +408,7 @@ export default function HomeScreen() {
         <Switch
           value={isOnline}
           onValueChange={handleUpdateStatus}
-          color="#3B82F6"
+          color={colors.primary}
         />
       </View>
 
@@ -399,7 +427,7 @@ export default function HomeScreen() {
                 onlyRegistered: val,
               });
             }}
-            color="#3B82F6"
+            color={colors.primary}
           />
         </View>
       </Surface>
@@ -408,9 +436,13 @@ export default function HomeScreen() {
         <Surface
           style={[
             styles.mainSurface,
-            { borderLeftWidth: 5, borderLeftColor: "#2563EB" },
+            {
+              borderLeftWidth: 5,
+              borderLeftColor: colors.primary,
+              backgroundColor: colors.surface,
+            },
           ]}
-          elevation={0}
+          elevation={1}
         >
           <Text variant="titleMedium" style={styles.surfaceTitle}>
             Viaje Activo
@@ -439,8 +471,9 @@ export default function HomeScreen() {
             mode="contained"
             style={{ marginTop: 20 }}
             onPress={handleFinishRide}
-            buttonColor="#10B981"
+            buttonColor={colors.secondary}
             contentStyle={{ height: 50 }}
+            textColor="white"
           >
             FINALIZAR VIAJE
           </Button>
@@ -464,14 +497,14 @@ export default function HomeScreen() {
               <View style={styles.rideHeader}>
                 <Chip
                   icon="account"
-                  style={{ backgroundColor: "#334155" }}
-                  textStyle={{ color: "#FFFFFF" }}
+                  style={{ backgroundColor: colors.divider }}
+                  textStyle={{ color: colors.text }}
                 >
                   {req.client?.profile?.nombre || req.guestName || "Invitado"}
                 </Chip>
                 <Text
                   variant="titleSmall"
-                  style={{ color: "#10B981", fontWeight: "bold" }}
+                  style={{ color: colors.secondary, fontWeight: "bold" }}
                 >
                   NUEVO
                 </Text>
@@ -482,7 +515,7 @@ export default function HomeScreen() {
                 description="Origen"
                 descriptionStyle={{ color: "#94A3B8" }}
                 left={(p) => (
-                  <List.Icon {...p} icon="map-marker" color="#3B82F6" />
+                  <List.Icon {...p} icon="map-marker" color={colors.primary} />
                 )}
               />
               <List.Item
@@ -524,7 +557,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="light-content" />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -541,9 +574,9 @@ export default function HomeScreen() {
         <Dialog
           visible={offerDialogVisible}
           onDismiss={() => setOfferDialogVisible(false)}
-          style={{ backgroundColor: "#1E293B" }}
+          style={{ backgroundColor: colors.surface }}
         >
-          <Dialog.Title style={{ color: "#FFFFFF" }}>
+          <Dialog.Title style={{ color: colors.text }}>
             Enviar Oferta
           </Dialog.Title>
           <Dialog.Content>
@@ -552,30 +585,32 @@ export default function HomeScreen() {
               value={offerForm.price}
               onChangeText={(t) => setOfferForm({ ...offerForm, price: t })}
               keyboardType="numeric"
-              mode="flat"
+              mode="outlined"
               style={{ backgroundColor: "transparent", marginBottom: 10 }}
-              textColor="#FFFFFF"
-              activeUnderlineColor="#2563EB"
+              textColor={colors.text}
+              activeOutlineColor={colors.primary}
+              outlineColor={colors.divider}
             />
             <TextInput
               label="ETA (mins)"
               value={offerForm.eta}
               onChangeText={(t) => setOfferForm({ ...offerForm, eta: t })}
               keyboardType="numeric"
-              mode="flat"
+              mode="outlined"
               style={{ backgroundColor: "transparent" }}
-              textColor="#FFFFFF"
-              activeUnderlineColor="#2563EB"
+              textColor={colors.text}
+              activeOutlineColor={colors.primary}
+              outlineColor={colors.divider}
             />
           </Dialog.Content>
           <Dialog.Actions>
             <Button
               onPress={() => setOfferDialogVisible(false)}
-              labelStyle={{ color: "#94A3B8" }}
+              textColor={colors.text}
             >
               Cerrar
             </Button>
-            <Button onPress={handleSendOffer} labelStyle={{ color: "#3B82F6" }}>
+            <Button onPress={handleSendOffer} textColor={colors.primary}>
               ENVIAR
             </Button>
           </Dialog.Actions>
@@ -585,18 +620,18 @@ export default function HomeScreen() {
         <Dialog
           visible={detailsDialogVisible}
           onDismiss={() => setDetailsDialogVisible(false)}
-          style={{ backgroundColor: "#1E293B" }}
+          style={{ backgroundColor: colors.surface }}
         >
-          <Dialog.Title style={{ color: "#FFFFFF" }}>
+          <Dialog.Title style={{ color: colors.text }}>
             {selectedOffer ? "Detalles del Chofer" : "Detalles del Pasajero"}
           </Dialog.Title>
           <Dialog.Content>
             {selectedOffer ? (
               <ScrollView style={{ maxHeight: 300 }}>
-                <Text variant="titleMedium" style={{ color: "#3B82F6" }}>
+                <Text variant="titleMedium" style={{ color: colors.primary }}>
                   Vehículo:
                 </Text>
-                <Text variant="bodyLarge" style={{ color: "#FFFFFF" }}>
+                <Text variant="bodyLarge" style={{ color: colors.text }}>
                   {selectedOffer.driver?.driverDocument?.vehicleModel ||
                     "Vehículo Habilitado"}{" "}
                   (
@@ -606,7 +641,10 @@ export default function HomeScreen() {
 
                 {isAuthenticated ? (
                   <>
-                    <Text variant="bodyMedium" style={{ color: "#94A3B8" }}>
+                    <Text
+                      variant="bodyMedium"
+                      style={{ color: colors.text, opacity: 0.7 }}
+                    >
                       Patente:{" "}
                       {selectedOffer.driver?.driverDocument?.vehiclePlate ||
                         "N/A"}
@@ -614,17 +652,23 @@ export default function HomeScreen() {
                     <Divider
                       style={{
                         marginVertical: 15,
-                        backgroundColor: "rgba(255,255,255,0.1)",
+                        backgroundColor: colors.divider,
                       }}
                     />
-                    <Text variant="titleMedium" style={{ color: "#3B82F6" }}>
+                    <Text
+                      variant="titleMedium"
+                      style={{ color: colors.primary }}
+                    >
                       Datos del Chofer:
                     </Text>
-                    <Text variant="bodyLarge" style={{ color: "#FFFFFF" }}>
+                    <Text variant="bodyLarge" style={{ color: colors.text }}>
                       Nombre: {selectedOffer.driver?.profile?.nombre}{" "}
                       {selectedOffer.driver?.profile?.apellido}
                     </Text>
-                    <Text variant="bodyMedium" style={{ color: "#94A3B8" }}>
+                    <Text
+                      variant="bodyMedium"
+                      style={{ color: colors.text, opacity: 0.7 }}
+                    >
                       Tel: {selectedOffer.driver?.profile?.phone || "N/A"}
                     </Text>
                   </>
@@ -640,10 +684,10 @@ export default function HomeScreen() {
                 <Divider
                   style={{
                     marginVertical: 15,
-                    backgroundColor: "rgba(255,255,255,0.1)",
+                    backgroundColor: colors.divider,
                   }}
                 />
-                <Text variant="titleMedium" style={{ color: "#3B82F6" }}>
+                <Text variant="titleMedium" style={{ color: colors.primary }}>
                   Reviews:
                 </Text>
                 {selectedUserRatings.length > 0 ? (
@@ -659,7 +703,11 @@ export default function HomeScreen() {
                       </View>
                       <Text
                         variant="bodySmall"
-                        style={{ fontStyle: "italic", color: "#94A3B8" }}
+                        style={{
+                          fontStyle: "italic",
+                          color: colors.text,
+                          opacity: 0.7,
+                        }}
                       >
                         "{rating.comment || "Sin comentario"}"
                       </Text>
@@ -673,10 +721,10 @@ export default function HomeScreen() {
               </ScrollView>
             ) : selectedRide ? (
               <ScrollView style={{ maxHeight: 300 }}>
-                <Text variant="titleMedium" style={{ color: "#3B82F6" }}>
+                <Text variant="titleMedium" style={{ color: colors.primary }}>
                   Pasajero:
                 </Text>
-                <Text variant="bodyLarge" style={{ color: "#FFFFFF" }}>
+                <Text variant="bodyLarge" style={{ color: colors.text }}>
                   {selectedRide.client?.profile?.nombre ||
                     selectedRide.guestName ||
                     "Invitado"}
@@ -684,10 +732,10 @@ export default function HomeScreen() {
                 <Divider
                   style={{
                     marginVertical: 15,
-                    backgroundColor: "rgba(255,255,255,0.1)",
+                    backgroundColor: colors.divider,
                   }}
                 />
-                <Text variant="titleMedium" style={{ color: "#3B82F6" }}>
+                <Text variant="titleMedium" style={{ color: colors.primary }}>
                   Reputación:
                 </Text>
                 {selectedUserRatings.length > 0 ? (
@@ -719,7 +767,7 @@ export default function HomeScreen() {
           <Dialog.Actions>
             <Button
               onPress={() => setDetailsDialogVisible(false)}
-              labelStyle={{ color: "#3B82F6" }}
+              textColor={colors.primary}
             >
               Cerrar
             </Button>
@@ -730,9 +778,9 @@ export default function HomeScreen() {
         <Dialog
           visible={ratingDialogVisible}
           onDismiss={() => setRatingDialogVisible(false)}
-          style={{ backgroundColor: "#1E293B" }}
+          style={{ backgroundColor: colors.surface }}
         >
-          <Dialog.Title style={{ color: "#FFFFFF" }}>
+          <Dialog.Title style={{ color: colors.text }}>
             Calificar Viaje
           </Dialog.Title>
           <Dialog.Content>
@@ -755,14 +803,15 @@ export default function HomeScreen() {
               label="Comentario"
               value={ratingComment}
               onChangeText={setRatingComment}
-              mode="flat"
+              mode="outlined"
               style={{ marginTop: 20, backgroundColor: "transparent" }}
-              textColor="#FFFFFF"
-              activeUnderlineColor="#F59E0B"
+              textColor={colors.text}
+              activeOutlineColor="#F59E0B"
+              outlineColor={colors.divider}
             />
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={handleRate} labelStyle={{ color: "#3B82F6" }}>
+            <Button onPress={handleRate} textColor={colors.primary}>
               ENVIAR
             </Button>
           </Dialog.Actions>
@@ -775,7 +824,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F172A", // Slate 900
   },
   scrollContent: {
     padding: 20,
@@ -792,7 +840,6 @@ const styles = StyleSheet.create({
     marginTop: Platform.OS === "ios" ? 40 : 20,
   },
   welcomeText: {
-    color: "#FFFFFF",
     fontWeight: "bold",
   },
   mainSurface: {

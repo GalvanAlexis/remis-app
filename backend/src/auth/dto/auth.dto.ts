@@ -8,8 +8,8 @@ import {
 import { Role } from '@prisma/client';
 
 export class RegisterDto {
-  @IsEmail()
-  email: string;
+  @IsString()
+  username: string;
 
   @IsString()
   @MinLength(6)
@@ -29,11 +29,11 @@ export class RegisterDto {
 
   @IsString()
   @IsOptional()
-  phone?: string;
+  direccion?: string;
 
   @IsString()
   @IsOptional()
-  direccion?: string;
+  profilePictureUrl?: string;
 
   // Campos específicos de Chofer
   @IsString()
@@ -50,12 +50,28 @@ export class RegisterDto {
 
   @IsString()
   @IsOptional()
-  maxPassengers?: string; // Lo recibimos como string y lo convertimos
+  maxPassengers?: string;
+
+  @IsString()
+  @IsOptional()
+  vehicleModel?: string;
+
+  @IsString()
+  @IsOptional()
+  vehiclePlate?: string;
+
+  @IsString()
+  @IsOptional()
+  vehicleColor?: string;
+
+  @IsString()
+  @IsOptional()
+  themePreference?: string;
 }
 
 export class LoginDto {
-  @IsEmail()
-  email: string;
+  @IsString()
+  username: string;
 
   @IsString()
   password: string;
@@ -66,7 +82,12 @@ export class AuthResponseDto {
   refresh_token: string;
   user: {
     id: string;
-    email: string;
+    username: string;
     role: Role;
+    profile?: {
+      nombre: string;
+      apellido: string;
+      themePreference: string;
+    };
   };
 }

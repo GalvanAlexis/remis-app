@@ -6,12 +6,12 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model User {
   id        String   @id @default(uuid())
-  email     String   @unique
+  username  String   @unique
   password  String
   role      Role
   createdAt DateTime @default(now())
@@ -34,9 +34,10 @@ model Profile {
 
   nombre    String
   apellido  String
-  dni       String  @unique
-  direccion String?
-  phone     String?
+  dni               String  @unique
+  direccion         String?
+  profilePictureUrl String?
+  themePreference   String  @default("EXECUTIVE")
 
   @@map("profiles")
 }
@@ -72,7 +73,6 @@ model RideRequest {
 
   // Campos para Invitados y Detalles
   guestName       String?
-  guestPhone      String?
   detalle         String?    // Info opcional (ej: "Piso 2, dpto B")
 
   originAddress   String

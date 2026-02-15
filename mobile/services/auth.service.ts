@@ -2,23 +2,28 @@ import api from "./api";
 import * as SecureStore from "expo-secure-store";
 
 export interface LoginDto {
-  email: string;
+  username: string;
   password: string;
 }
 
 export interface RegisterDto {
-  email: string;
+  username: string;
   password: string;
   role: "CLIENTE" | "CHOFER";
   nombre: string;
   apellido: string;
   dni: string;
-  phone: string;
-  direccion: string;
+  direccion?: string;
+  profilePictureUrl?: string;
+  // Chofer specific
   licenciaUrl?: string;
   cedulaUrl?: string;
   habilitacionUrl?: string;
   maxPassengers?: string;
+  vehicleModel?: string;
+  vehiclePlate?: string;
+  vehicleColor?: string;
+  themePreference?: string;
 }
 
 export interface AuthResponse {
@@ -26,23 +31,32 @@ export interface AuthResponse {
   refresh_token: string;
   user: {
     id: string;
-    email: string;
+    username: string;
     role: string;
   };
 }
 
 export interface UserProfile {
   id: string;
-  email: string;
+  username: string;
   role: string;
   profile: {
     nombre: string;
     apellido: string;
     dni: string;
-    phone: string;
-    direccion: string;
+    direccion?: string;
+    profilePictureUrl?: string;
+    themePreference?: string;
   } | null;
-  driverDocument: any;
+  driverDocument?: {
+    licenciaUrl?: string;
+    cedulaUrl?: string;
+    habilitacionUrl?: string;
+    maxPassengers?: number;
+    vehicleModel?: string;
+    vehiclePlate?: string;
+    vehicleColor?: string;
+  };
 }
 
 export const authService = {

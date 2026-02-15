@@ -9,6 +9,8 @@ export default defineConfig({
     path: 'prisma/migrations',
   },
   datasource: {
-    url: process.env.DATABASE_URL || 'file:./dev.db',
+    url:
+      process.env.DATABASE_URL ||
+      'postgresql://postgres:facilFacil123%23@localhost:5433/remis',
   },
 });

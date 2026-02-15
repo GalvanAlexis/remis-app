@@ -12,11 +12,11 @@ export class UpdateProfileDto {
 
   @IsString()
   @IsOptional()
-  phone?: string;
+  direccion?: string;
 
   @IsString()
   @IsOptional()
-  direccion?: string;
+  themePreference?: string;
 }
 
 export class UploadDriverDocumentsDto {
@@ -44,7 +44,6 @@ export class ProfileResponseDto {
   nombre: string;
   apellido: string;
   dni: string;
-  phone?: string;
   direccion?: string;
   userId: string;
 }
@@ -61,7 +60,7 @@ export class DriverDocumentsResponseDto {
 
 export class UserWithProfileDto {
   id: string;
-  email: string;
+  username: string;
   role: string;
   profile: ProfileResponseDto;
   driverDocument?: DriverDocumentsResponseDto;

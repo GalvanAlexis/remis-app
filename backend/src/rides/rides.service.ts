@@ -22,7 +22,6 @@ export class RidesService {
       data: {
         clientId: data.clientId,
         guestName: data.guestName,
-        guestPhone: data.guestPhone,
         detalle: data.detalle,
         originAddress: data.originAddress,
         destAddress: data.destAddress,
@@ -96,6 +95,17 @@ export class RidesService {
 
     // Usar una transacción para actualizar el viaje y la oferta
     return this.prisma.$transaction(async (tx) => {
+      // 0. Verificar que el viaje siga PENDIENTE y no tenga oferta seleccionada
+      const rideCheck = await tx.rideRequest.findUnique({
+        where: { id: rideId },
+      });
+
+      if (!rideCheck || rideCheck.status !== RideStatus.PENDING) {
+        throw new BadRequestException(
+          'Este viaje ya no está disponible o ya ha sido asignado',
+        );
+      }
+
       // 1. Marcar la oferta como aceptada
       await tx.offer.update({
         where: { id: offerId },

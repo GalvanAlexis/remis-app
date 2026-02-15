@@ -7,14 +7,16 @@ import {
   SafeAreaView,
   TouchableOpacity,
 } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { Text, Button, Surface } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { StatusBar } from "expo-status-bar";
+import { useAppTheme } from "../../context/ThemeContext";
 
 const { width, height } = Dimensions.get("window");
 
 export default function WelcomeScreen() {
+  const { colors, isDark } = useAppTheme();
   const router = useRouter();
 
   return (
@@ -30,23 +32,46 @@ export default function WelcomeScreen() {
             <MaterialCommunityIcons
               name="car-connected"
               size={60}
-              color="#2563EB"
+              color={colors.primary}
             />
           </View>
-          <Text variant="displaySmall" style={styles.title}>
+          <Text
+            variant="displaySmall"
+            style={[styles.title, { color: colors.text }]}
+          >
             REMIS APP
           </Text>
-          <Text variant="titleMedium" style={styles.tagline}>
+          <Text
+            variant="titleMedium"
+            style={[styles.tagline, { color: colors.text, opacity: 0.6 }]}
+          >
             Tu transporte libre y directo
           </Text>
         </View>
 
         <View style={styles.content}>
-          <Surface style={styles.glassCard} elevation={0}>
-            <Text variant="headlineSmall" style={styles.welcomeText}>
+          <Surface
+            style={[
+              styles.glassCard,
+              {
+                backgroundColor: isDark
+                  ? "rgba(30, 41, 59, 0.7)"
+                  : "rgba(255, 255, 255, 0.9)",
+                borderColor: colors.divider,
+              },
+            ]}
+            elevation={2}
+          >
+            <Text
+              variant="headlineSmall"
+              style={[styles.welcomeText, { color: colors.text }]}
+            >
               ¿A dónde vamos hoy?
             </Text>
-            <Text variant="bodyLarge" style={styles.description}>
+            <Text
+              variant="bodyLarge"
+              style={[styles.description, { color: colors.text, opacity: 0.8 }]}
+            >
               Pide un transporte de forma rápida y segura, incluso sin
               registrarte.
             </Text>
@@ -54,9 +79,9 @@ export default function WelcomeScreen() {
             <Button
               mode="contained"
               onPress={() => router.push("/(tabs)")}
-              style={[styles.mainButton, { backgroundColor: "#10B981" }]}
+              style={[styles.mainButton, { backgroundColor: colors.secondary }]}
               contentStyle={styles.buttonContent}
-              labelStyle={styles.buttonLabel}
+              labelStyle={[styles.buttonLabel, { color: "#fff" }]}
             >
               RESERVAR AHORA
             </Button>
@@ -64,7 +89,7 @@ export default function WelcomeScreen() {
             <Button
               mode="contained"
               onPress={() => router.push("/(auth)/register-choice")}
-              style={[styles.mainButton, { backgroundColor: "#2563EB" }]}
+              style={[styles.mainButton, { backgroundColor: colors.primary }]}
               contentStyle={styles.buttonContent}
               labelStyle={styles.buttonLabel}
             >
@@ -110,7 +135,6 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F172A", // Slate 900
   },
   bgOverlay: {
     ...StyleSheet.absoluteFillObject,

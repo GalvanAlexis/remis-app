@@ -8,6 +8,12 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  ThemeProvider,
+  useAppTheme,
+  getPaperTheme,
+} from "../context/ThemeContext";
+import { StatusBar } from "expo-status-bar";
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -59,6 +65,8 @@ if (__DEV__) {
 function RootLayoutNav() {
   console.log("🟢 RootLayoutNav Rendering...");
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { theme, isDark } = useAppTheme();
+  const paperTheme = getPaperTheme(theme);
   const segments = useSegments();
   const router = useRouter();
 
@@ -106,12 +114,24 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
-        <PaperProvider>
+        <ThemeProvider>
           <AuthProvider>
-            <RootLayoutNav />
+            <ThemeWrapper />
           </AuthProvider>
-        </PaperProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
     </ErrorBoundary>
+  );
+}
+
+function ThemeWrapper() {
+  const { theme, isDark } = useAppTheme();
+  const paperTheme = getPaperTheme(theme);
+
+  return (
+    <PaperProvider theme={paperTheme}>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <RootLayoutNav />
+    </PaperProvider>
   );
 }

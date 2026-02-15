@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start --port 8080",
-    "android": "expo start --android --port 8080",
-    "ios": "expo start --ios --port 8080",
-    "web": "expo start --web --port 8080"
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -16,6 +16,7 @@
     "expo-constants": "~18.0.13",
     "expo-crypto": "~15.0.8",
     "expo-font": "~14.0.11",
+    "expo-image-picker": "~17.0.10",
     "expo-linking": "^8.0.11",
     "expo-router": "~6.0.23",
     "expo-secure-store": "~15.0.8",

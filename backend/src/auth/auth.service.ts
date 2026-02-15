@@ -19,11 +19,11 @@ export class AuthService {
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
     // Check if user already exists
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: registerDto.email },
+      where: { username: registerDto.username },
     });
 
     if (existingUser) {
-      throw new ConflictException('Email already registered');
+      throw new ConflictException('Username already registered');
     }
 
     // Check if DNI already exists
@@ -41,7 +41,7 @@ export class AuthService {
     // Create user and profile in transaction
     const user = await this.prisma.user.create({
       data: {
-        email: registerDto.email,
+        username: registerDto.username,
         password: hashedPassword,
         role: registerDto.role,
         profile: {
@@ -49,8 +49,9 @@ export class AuthService {
             nombre: registerDto.nombre,
             apellido: registerDto.apellido,
             dni: registerDto.dni,
-            phone: registerDto.phone,
             direccion: registerDto.direccion,
+            profilePictureUrl: registerDto.profilePictureUrl,
+            themePreference: registerDto.themePreference || 'EXECUTIVE',
           },
         },
         ...(registerDto.role === Role.CHOFER && {
@@ -62,6 +63,9 @@ export class AuthService {
               maxPassengers: registerDto.maxPassengers
                 ? parseInt(registerDto.maxPassengers, 10)
                 : null,
+              vehicleModel: registerDto.vehicleModel,
+              vehiclePlate: registerDto.vehiclePlate,
+              vehicleColor: registerDto.vehicleColor,
             },
           },
         }),
@@ -73,14 +77,21 @@ export class AuthService {
     });
 
     // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user.id, user.username, user.role);
 
     return {
       ...tokens,
       user: {
         id: user.id,
-        email: user.email,
+        username: user.username,
         role: user.role,
+        profile: user.profile
+          ? {
+              nombre: user.profile.nombre,
+              apellido: user.profile.apellido,
+              themePreference: user.profile.themePreference,
+            }
+          : undefined,
       },
     };
   }
@@ -88,7 +99,8 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     // Find user
     const user = await this.prisma.user.findUnique({
-      where: { email: loginDto.email },
+      where: { username: loginDto.username },
+      include: { profile: true },
     });
 
     if (!user) {
@@ -106,20 +118,27 @@ export class AuthService {
     }
 
     // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user.id, user.username, user.role);
 
     return {
       ...tokens,
       user: {
         id: user.id,
-        email: user.email,
+        username: user.username,
         role: user.role,
+        profile: user.profile
+          ? {
+              nombre: user.profile.nombre,
+              apellido: user.profile.apellido,
+              themePreference: user.profile.themePreference,
+            }
+          : undefined,
       },
     };
   }
 
-  private async generateTokens(userId: string, email: string, role: Role) {
-    const payload = { sub: userId, email, role };
+  private async generateTokens(userId: string, username: string, role: Role) {
+    const payload = { sub: userId, username, role };
 
     const [access_token, refresh_token] = await Promise.all([
       this.jwtService.signAsync(payload),
@@ -139,7 +158,7 @@ export class AuthService {
       where: { id: userId },
       select: {
         id: true,
-        email: true,
+        username: true,
         role: true,
         profile: true,
       },

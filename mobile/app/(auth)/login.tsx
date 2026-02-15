@@ -11,24 +11,25 @@ import {
 import { Text, TextInput, Button, Surface } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../hooks/useAuth";
-import { StatusBar } from "expo-status-bar";
+import { useAppTheme } from "../../context/ThemeContext";
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("");
+  const { colors, isDark } = useAppTheme();
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!username || !password) {
       Alert.alert("Error", "Por favor complete todos los campos");
       return;
     }
 
     setLoading(true);
     try {
-      await login({ email, password });
+      await login({ username, password });
     } catch (error: any) {
       Alert.alert(
         "Error",
@@ -40,8 +41,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -49,25 +49,43 @@ export default function LoginScreen() {
         <SafeAreaView style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.header}>
-              <Text variant="displaySmall" style={styles.appTitle}>
+              <Text
+                variant="displaySmall"
+                style={[styles.appTitle, { color: colors.text }]}
+              >
                 REMIS APP
               </Text>
-              <Text variant="titleMedium" style={styles.welcomeText}>
+              <Text
+                variant="titleMedium"
+                style={[
+                  styles.welcomeText,
+                  { color: colors.text, opacity: 0.6 },
+                ]}
+              >
                 Bienvenido de nuevo
               </Text>
             </View>
 
-            <Surface style={styles.surface} elevation={0}>
+            <Surface
+              style={[
+                styles.surface,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.divider,
+                },
+              ]}
+              elevation={2}
+            >
               <TextInput
-                label="Email"
-                value={email}
-                onChangeText={setEmail}
-                mode="flat"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={styles.input}
-                textColor="#FFFFFF"
-                placeholderTextColor="#64748B"
+                label="Nombre de usuario"
+                value={username}
+                onChangeText={setUsername}
+                mode="outlined"
+                style={[styles.input, { backgroundColor: colors.surface }]}
+                textColor={colors.text}
+                outlineColor={colors.divider}
+                activeOutlineColor={colors.primary}
+                placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
               />
 
               <TextInput
@@ -87,7 +105,8 @@ export default function LoginScreen() {
                 disabled={loading}
                 style={styles.button}
                 contentStyle={styles.buttonContent}
-                buttonColor="#2563EB"
+                buttonColor={colors.primary}
+                textColor="white"
               >
                 Ingresar
               </Button>
@@ -96,7 +115,7 @@ export default function LoginScreen() {
                 mode="text"
                 onPress={() => router.push("/(auth)/register-choice")}
                 style={styles.registerButton}
-                labelStyle={styles.registerLabel}
+                labelStyle={[styles.registerLabel, { color: colors.primary }]}
               >
                 ¿No tienes cuenta? Regístrate
               </Button>
@@ -120,7 +139,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F172A",
   },
   scrollContent: {
     flexGrow: 1,
@@ -143,9 +161,7 @@ const styles = StyleSheet.create({
   surface: {
     padding: 24,
     borderRadius: 24,
-    backgroundColor: "#1E293B",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.05)",
   },
   input: {
     marginBottom: 15,
@@ -162,7 +178,6 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   registerLabel: {
-    color: "#2563EB",
     fontWeight: "bold",
   },
   backButton: {
