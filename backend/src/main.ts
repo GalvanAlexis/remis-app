@@ -1,9 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Enable Socket.IO adapter
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   // Enable CORS for mobile app
   app.enableCors({

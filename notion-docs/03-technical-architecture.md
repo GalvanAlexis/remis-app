@@ -498,6 +498,15 @@ model Rating {
 
 ## Real-Time Communication Flow
 
+### Socket.io Configuration (Critical)
+
+> [!IMPORTANT]
+> Para asegurar la conexión con clientes móviles (React Native/Expo), se requiere la siguiente configuración en el backend:
+
+1.  **IoAdapter:** Debe estar habilitado en `main.ts` (`app.useWebSocketAdapter(new IoAdapter(app))`).
+2.  **Transports:** El Gateway debe permitir `['websocket', 'polling']` para compatibilidad.
+3.  **Cors:** `credentials: true` y `origin: *` (o específico en prod).
+
 ### Socket.io Events
 
 ```typescript
@@ -686,21 +695,21 @@ graph LR
 
 ## Technology Stack Summary
 
-| Layer              | Technology          | Purpose                   |
-| ------------------ | ------------------- | ------------------------- |
-| **Mobile**         | React Native + Expo | Cross-platform app        |
-| **Navigation**     | Expo Router         | File-based routing        |
-| **State (Server)** | TanStack Query      | Server state management   |
-| **State (Client)** | Zustand             | Client state management   |
-| **Real-time**      | Socket.io Client    | WebSocket communication   |
-| **API**            | NestJS + TypeScript | Backend framework         |
-| **Database**       | PostgreSQL 15       | Primary data store        |
-| **Geospatial**     | PostGIS             | Geographic queries        |
-| **Cache**          | Redis 7             | Caching + token storage   |
-| **ORM**            | Prisma              | Type-safe database access |
-| **Auth**           | JWT + bcrypt        | Authentication            |
-| **File Upload**    | Multer + S3         | Document storage          |
-| **Queue**          | Bull                | Async job processing      |
-| **Notifications**  | Expo Notifications  | Push notifications        |
-| **Deployment**     | Railway/Render      | Container hosting         |
-| **Monitoring**     | Sentry              | Error tracking            |
+| Layer              | Technology          | Purpose                   | Local config |
+| ------------------ | ------------------- | ------------------------- | ------------ |
+| **Mobile**         | React Native + Expo | Cross-platform app        | Port 8081    |
+| **Navigation**     | Expo Router         | File-based routing        | -            |
+| **State (Server)** | TanStack Query      | Server state management   | -            |
+| **State (Client)** | Zustand             | Client state management   | -            |
+| **Real-time**      | Socket.io Client    | WebSocket communication   | v4.x         |
+| **API**            | NestJS + TypeScript | Backend framework         | Port 3000    |
+| **Database**       | PostgreSQL 16       | Primary data store        | Port 5433    |
+| **Geospatial**     | PostGIS             | Geographic queries        | Enabled      |
+| **Cache**          | Redis 7             | Caching + token storage   | Optional     |
+| **ORM**            | Prisma              | Type-safe database access | v5.x         |
+| **Auth**           | JWT + bcrypt        | Authentication            | -            |
+| **File Upload**    | Multer + Local      | Document storage          | /uploads     |
+| **Queue**          | Bull                | Async job processing      | -            |
+| **Notifications**  | Expo Notifications  | Push notifications        | -            |
+| **Deployment**     | Railway/Render      | Container hosting         | -            |
+| **Monitoring**     | Sentry              | Error tracking            | -            |

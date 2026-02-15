@@ -6,6 +6,37 @@ Esta carpeta contiene toda la planificación técnica y especificaciones necesar
 
 ---
 
+## ⚡ Estado Actual y Configuración Local (2026-02-15)
+
+El proyecto está **100% funcional** con la siguiente configuración:
+
+### 🔌 Puertos y Servicios
+
+- **Backend (NestJS):** Puerto `3000` (http://localhost:3000)
+- **Mobile (Expo):** Puerto `8081` (exp://192.168.1.100:8081)
+- **Base de Datos (PostgreSQL):** Puerto `5433` (Base de datos: `remis`)
+- **WebSocket:** Integrado en puerto `3000` (Namespace: `/`)
+
+### 🚀 Comandos de Inicio Rápido
+
+**Terminal 1: Backend**
+
+```bash
+cd backend
+npm run start:dev
+```
+
+**Terminal 2: Mobile**
+
+```bash
+cd mobile
+npx expo start --clear
+```
+
+> **Nota:** Se cambió el puerto del backend a `3000` para evitar conflictos con servicios del sistema (Apache) en el puerto 8080.
+
+---
+
 ## 📂 Estructura de Documentos
 
 ### 1. [Project Overview](./01-project-overview.md)
