@@ -11,20 +11,25 @@ import { StatusBar } from "expo-status-bar";
 import { Text, Button, Surface } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useAppTheme } from "../../context/ThemeContext";
 
 const { width, height } = Dimensions.get("window");
 
+// Colores fijos del tema EXECUTIVE para el welcome
+const EXECUTIVE_COLORS = {
+  primary: "#1A237E", // Deep Navy
+  secondary: "#C5A059", // Gold
+  background: "#F8F9FA",
+  surface: "#FFFFFF",
+  text: "#121212",
+  divider: "#E0E0E0",
+};
+
 export default function WelcomeScreen() {
-  const { colors, isDark } = useAppTheme();
   const router = useRouter();
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-
-      {/* Background Overlay for a cinematic feel */}
-      <View style={styles.bgOverlay} />
 
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
@@ -32,18 +37,21 @@ export default function WelcomeScreen() {
             <MaterialCommunityIcons
               name="car-connected"
               size={60}
-              color={colors.primary}
+              color={EXECUTIVE_COLORS.primary}
             />
           </View>
           <Text
             variant="displaySmall"
-            style={[styles.title, { color: colors.text }]}
+            style={[styles.title, { color: EXECUTIVE_COLORS.text }]}
           >
             REMIS APP
           </Text>
           <Text
             variant="titleMedium"
-            style={[styles.tagline, { color: colors.text, opacity: 0.6 }]}
+            style={[
+              styles.tagline,
+              { color: EXECUTIVE_COLORS.text, opacity: 0.6 },
+            ]}
           >
             Tu transporte libre y directo
           </Text>
@@ -54,23 +62,24 @@ export default function WelcomeScreen() {
             style={[
               styles.glassCard,
               {
-                backgroundColor: isDark
-                  ? "rgba(30, 41, 59, 0.7)"
-                  : "rgba(255, 255, 255, 0.9)",
-                borderColor: colors.divider,
+                backgroundColor: "rgba(255, 255, 255, 0.9)",
+                borderColor: EXECUTIVE_COLORS.divider,
               },
             ]}
             elevation={2}
           >
             <Text
               variant="headlineSmall"
-              style={[styles.welcomeText, { color: colors.text }]}
+              style={[styles.welcomeText, { color: EXECUTIVE_COLORS.text }]}
             >
               ¿A dónde vamos hoy?
             </Text>
             <Text
               variant="bodyLarge"
-              style={[styles.description, { color: colors.text, opacity: 0.8 }]}
+              style={[
+                styles.description,
+                { color: EXECUTIVE_COLORS.text, opacity: 0.8 },
+              ]}
             >
               Pide un transporte de forma rápida y segura, incluso sin
               registrarte.
@@ -79,7 +88,10 @@ export default function WelcomeScreen() {
             <Button
               mode="contained"
               onPress={() => router.push("/(tabs)")}
-              style={[styles.mainButton, { backgroundColor: colors.secondary }]}
+              style={[
+                styles.mainButton,
+                { backgroundColor: EXECUTIVE_COLORS.secondary },
+              ]}
               contentStyle={styles.buttonContent}
               labelStyle={[styles.buttonLabel, { color: "#fff" }]}
             >
@@ -89,9 +101,12 @@ export default function WelcomeScreen() {
             <Button
               mode="contained"
               onPress={() => router.push("/(auth)/register-choice")}
-              style={[styles.mainButton, { backgroundColor: colors.primary }]}
+              style={[
+                styles.mainButton,
+                { backgroundColor: EXECUTIVE_COLORS.primary },
+              ]}
               contentStyle={styles.buttonContent}
-              labelStyle={styles.buttonLabel}
+              labelStyle={[styles.buttonLabel, { color: "#fff" }]}
             >
               CREAR CUENTA
             </Button>
@@ -135,10 +150,6 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  bgOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15, 23, 42, 0.8)",
   },
   safeArea: {
     flex: 1,

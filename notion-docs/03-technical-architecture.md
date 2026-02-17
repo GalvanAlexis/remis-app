@@ -21,16 +21,12 @@ graph TB
         AUTH[Auth Module]
         USERS[Users Module]
         RIDES[Rides Module]
-        GEO[Geolocation Module]
         OFFERS[Offers Module]
         RATINGS[Ratings Module]
-        NOTIF[Notifications Module]
     end
 
     subgraph "Data Layer"
-        PG[(PostgreSQL<br/>+ PostGIS)]
-        REDIS[(Redis<br/>Cache + Tokens)]
-        QUEUE[Bull Queue<br/>Async Jobs]
+        PG[(PostgreSQL)]
     end
 
     MA_C -->|REST + WS| NEST
@@ -40,21 +36,14 @@ graph TB
     NEST --> AUTH
     NEST --> USERS
     NEST --> RIDES
-    NEST --> GEO
     NEST --> OFFERS
     NEST --> RATINGS
-    NEST --> NOTIF
 
     AUTH --> PG
-    AUTH --> REDIS
     USERS --> PG
     RIDES --> PG
-    GEO --> PG
     OFFERS --> PG
     RATINGS --> PG
-
-    GEO --> REDIS
-    NOTIF --> QUEUE
 
     WS --> RIDES
     WS --> OFFERS
@@ -69,20 +58,19 @@ graph TB
 ```mermaid
 erDiagram
     User ||--o| Profile : has
-    User ||--o| DriverDocuments : has
-    User ||--o| DriverStatus : has
-    User ||--o{ Ride : "creates (client)"
-    User ||--o{ Ride : "accepts (driver)"
-    User ||--o{ Offer : creates
+    User ||--o| DriverDocument : has
+    User ||--o{ RideRequest : "creates (client)"
+    User ||--o{ Offer : "creates (driver)"
     User ||--o{ Rating : "gives"
     User ||--o{ Rating : "receives"
 
-    Ride ||--o{ Offer : "has many"
-    Ride ||--o{ Rating : "generates"
+    RideRequest ||--o{Offer : "receives"
+    RideRequest ||--o| Rating : "generates"
+    RideRequest ||--o| Offer : "selected"
 
     User {
         string id PK
-        string email UK
+        string username UK
         string password
         enum role
         datetime created_at
@@ -96,58 +84,44 @@ erDiagram
         string apellido
         string dni UK
         string direccion
-        string phone
-        string avatar_url
+        string profile_picture_url
+        string theme_preference
     }
 
-    DriverDocuments {
+    DriverDocument {
         string id PK
         string user_id FK
         string licencia_url
         string cedula_url
-        string habilitaciones_url
+        string habilitacion_url
         int max_passengers
-        string vehicle_brand
-        string vehicle_model
-        string vehicle_plate UK
-        enum verification_status
+        boolean is_verified
         datetime verified_at
-    }
-
-    DriverStatus {
-        string id PK
-        string user_id FK
         boolean is_online
-        boolean accepting_unregistered
-        decimal current_lat
-        decimal current_lng
-        datetime updated_at
+        boolean only_registered
+        string vehicle_model
+        string vehicle_plate
+        string vehicle_color
     }
 
-    Ride {
+    RideRequest {
         string id PK
         string client_id FK
-        string driver_id FK
+        string guest_name
+        string detalle
         string origin_address
-        decimal origin_lat
-        decimal origin_lng
-        string destination_address
-        decimal destination_lat
-        decimal destination_lng
+        string dest_address
         enum status
-        decimal estimated_price
-        decimal final_price
         datetime created_at
-        datetime started_at
-        datetime completed_at
+        datetime updated_at
     }
 
     Offer {
         string id PK
-        string ride_id FK
+        string ride_request_id FK
         string driver_id FK
-        int estimated_arrival_minutes
-        decimal quoted_price
+        int estimated_minutes
+        float quoted_price
         enum status
         datetime created_at
     }
@@ -177,21 +151,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
+enum Role {
   CLIENTE
   CHOFER
-}
-
-enum VerificationStatus {
-  PENDING
-  APPROVED
-  REJECTED
+  ADMIN
 }
 
 enum RideStatus {
   PENDING
   MATCHED
-  IN_PROGRESS
   COMPLETED
   CANCELLED
 }
@@ -199,139 +167,127 @@ enum RideStatus {
 enum OfferStatus {
   PENDING
   ACCEPTED
-  REJECTED
+  DECLINED
+  EXPIRED
 }
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  password      String
-  role          UserRole
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // Relations
   profile          Profile?
-  driverDocuments  DriverDocuments?
-  driverStatus     DriverStatus?
-  ridesAsClient    Ride[]   @relation("ClientRides")
-  ridesAsDriver    Ride[]   @relation("DriverRides")
-  offers           Offer[]
-  ratingsGiven     Rating[] @relation("RatingsGiven")
-  ratingsReceived  Rating[] @relation("RatingsReceived")
+  driverDocs       DriverDocument?
+  ridesAsClient    RideRequest[]   @relation("ClientRides")
+  offersAsDriver   Offer[]         @relation("DriverOffers")
+  ratingsGiven     Rating[]        @relation("RaterRatings")
+  ratingsReceived  Rating[]        @relation("RateeRatings")
 
   @@map("users")
 }
 
 model Profile {
   id        String  @id @default(uuid())
-  userId    String  @unique @map("user_id")
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   nombre    String
   apellido  String
-  dni       String  @unique
-  direccion String?
-  phone     String?
-  avatarUrl String? @map("avatar_url")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dni               String  @unique
+  direccion         String?
+  profilePictureUrl String?
+  themePreference   String  @default("EXECUTIVE")
 
   @@map("profiles")
 }
 
-model DriverDocuments {
-  id                  String             @id @default(uuid())
-  userId              String             @unique @map("user_id")
-  licenciaUrl         String             @map("licencia_url")
-  cedulaUrl           String             @map("cedula_url")
-  habilitacionesUrl   String             @map("habilitaciones_url")
-  maxPassengers       Int                @map("max_passengers")
-  vehicleBrand        String             @map("vehicle_brand")
-  vehicleModel        String             @map("vehicle_model")
-  vehiclePlate        String             @unique @map("vehicle_plate")
-  verificationStatus  VerificationStatus @default(PENDING) @map("verification_status")
-  verifiedAt          DateTime?          @map("verified_at")
+model DriverDocument {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  licenciaUrl     String?
+  cedulaUrl       String?
+  habilitacionUrl String?
+  maxPassengers   Int?
+  isVerified      Boolean   @default(false)
+  verifiedAt      DateTime?
+
+  // Estados operativos
+  isOnline        Boolean   @default(false)
+  onlyRegistered  Boolean   @default(false)
+
+  // Datos del Vehículo
+  vehicleModel    String?
+  vehiclePlate    String?
+  vehicleColor    String?
 
   @@map("driver_documents")
 }
 
-model DriverStatus {
-  id                    String    @id @default(uuid())
-  userId                String    @unique @map("user_id")
-  isOnline              Boolean   @default(false) @map("is_online")
-  acceptingUnregistered Boolean   @default(true) @map("accepting_unregistered")
-  currentLat            Decimal?  @map("current_lat") @db.Decimal(10, 8)
-  currentLng            Decimal?  @map("current_lng") @db.Decimal(11, 8)
-  updatedAt             DateTime  @updatedAt @map("updated_at")
+model RideRequest {
+  id              String     @id @default(uuid())
+  clientId        String?
+  client          User?      @relation("ClientRides", fields: [clientId], references: [id])
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Campos para Invitados y Detalles
+  guestName       String?
+  detalle         String?    // Info opcional (ej: "Piso 2, dpto B")
 
-  @@map("driver_status")
-  @@index([currentLat, currentLng], type: Gist) // PostGIS spatial index
-}
+  originAddress   String
+  destAddress     String
+  status          RideStatus @default(PENDING)
 
-model Ride {
-  id                  String      @id @default(uuid())
-  clientId            String      @map("client_id")
-  driverId            String?     @map("driver_id")
-  originAddress       String      @map("origin_address")
-  originLat           Decimal     @map("origin_lat") @db.Decimal(10, 8)
-  originLng           Decimal     @map("origin_lng") @db.Decimal(11, 8)
-  destinationAddress  String      @map("destination_address")
-  destinationLat      Decimal     @map("destination_lat") @db.Decimal(10, 8)
-  destinationLng      Decimal     @map("destination_lng") @db.Decimal(11, 8)
-  status              RideStatus  @default(PENDING)
-  estimatedPrice      Decimal?    @map("estimated_price") @db.Decimal(10, 2)
-  finalPrice          Decimal?    @map("final_price") @db.Decimal(10, 2)
-  createdAt           DateTime    @default(now()) @map("created_at")
-  startedAt           DateTime?   @map("started_at")
-  completedAt         DateTime?   @map("completed_at")
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
-  client  User     @relation("ClientRides", fields: [clientId], references: [id])
-  driver  User?    @relation("DriverRides", fields: [driverId], references: [id])
-  offers  Offer[]
-  ratings Rating[]
+  offers          Offer[]
+  selectedOfferId String?    @unique
+  selectedOffer   Offer?     @relation("SelectedOffer", fields: [selectedOfferId], references: [id])
+  rating          Rating?
 
-  @@map("rides")
-  @@index([status, createdAt])
-  @@index([clientId])
-  @@index([driverId])
+  @@map("ride_requests")
 }
 
 model Offer {
-  id                      String      @id @default(uuid())
-  rideId                  String      @map("ride_id")
-  driverId                String      @map("driver_id")
-  estimatedArrivalMinutes Int         @map("estimated_arrival_minutes")
-  quotedPrice             Decimal     @map("quoted_price") @db.Decimal(10, 2)
-  status                  OfferStatus @default(PENDING)
-  createdAt               DateTime    @default(now()) @map("created_at")
+  id                String      @id @default(uuid())
+  rideRequestId     String
+  rideRequest       RideRequest @relation(fields: [rideRequestId], references: [id], onDelete: Cascade)
 
-  ride   Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
-  driver User @relation(fields: [driverId], references: [id])
+  driverId          String
+  driver            User        @relation("DriverOffers", fields: [driverId], references: [id])
+
+  estimatedMinutes  Int
+  quotedPrice       Float
+  status            OfferStatus @default(PENDING)
+
+  createdAt         DateTime    @default(now())
+
+  selectedForRide   RideRequest? @relation("SelectedOffer")
 
   @@map("offers")
-  @@index([rideId, status])
-  @@index([driverId])
 }
 
 model Rating {
-  id         String   @id @default(uuid())
-  rideId     String   @map("ride_id")
-  fromUserId String   @map("from_user_id")
-  toUserId   String   @map("to_user_id")
-  score      Int      // 1-5
-  comment    String?  @db.Text
-  createdAt  DateTime @default(now()) @map("created_at")
+  id          String      @id @default(uuid())
+  rideId      String      @unique
+  ride        RideRequest @relation(fields: [rideId], references: [id])
 
-  ride     Ride @relation(fields: [rideId], references: [id])
-  fromUser User @relation("RatingsGiven", fields: [fromUserId], references: [id])
-  toUser   User @relation("RatingsReceived", fields: [toUserId], references: [id])
+  fromUserId  String
+  fromUser    User        @relation("RaterRatings", fields: [fromUserId], references: [id])
+
+  toUserId    String
+  toUser      User        @relation("RateeRatings", fields: [toUserId], references: [id])
+
+  score       Int
+  comment     String?
+
+  createdAt   DateTime    @default(now())
 
   @@map("ratings")
-  @@unique([rideId, fromUserId]) // Un usuario solo puede calificar una vez por viaje
-  @@index([toUserId])
 }
 ```
 
@@ -389,27 +345,9 @@ model Rating {
 - `FileUploadService`: Manejo de archivos
 - `DocumentVerificationService`: Lógica de verificación
 
-### 3. Geolocation Module
+### 3. Rides Module
 
-**Responsabilidades:**
-
-- Update de ubicación en tiempo real
-- Cálculo de distancias (PostGIS)
-- Búsqueda de choferes cercanos
-
-**Endpoints:**
-
-- `PATCH /api/v1/drivers/location`
-- `GET /api/v1/drivers/nearby`
-
-**Services:**
-
-- `GeolocationService`: Queries geoespaciales
-- `DistanceCalculatorService`: Cálculos con PostGIS
-
-### 4. Rides Module
-
-**Responsabilidades:**
+**Responsabilidades:\*\***
 
 - Creación de solicitudes de viaje
 - Matching de cliente-chofer
@@ -512,42 +450,24 @@ model Rating {
 ```typescript
 // Server → Client Events
 interface ServerToClientEvents {
-  new_ride_request: (payload: {
-    rideId: string;
-    origin: string;
-    destination: string;
-    clientName: string;
-    isClientRegistered: boolean;
-    distance: number;
-  }) => void;
-
-  new_offer: (payload: {
-    offerId: string;
-    driverName: string;
-    driverRating: number;
-    estimatedArrival: number;
-    quotedPrice: number;
-  }) => void;
-
-  offer_accepted: (payload: {
-    rideId: string;
-    clientName: string;
-    origin: string;
-    destination: string;
-  }) => void;
-
-  ride_status_changed: (payload: {
-    rideId: string;
-    newStatus: RideStatus;
-  }) => void;
+  new_ride_request: (ride: RideRequest) => void;
+  new_offer: (offer: Offer) => void;
+  offer_accepted: (ride: RideRequest) => void;
+  ride_matched: (ride: RideRequest) => void;
+  ride_completed: (ride: RideRequest) => void;
 }
 
 // Client → Server Events
 interface ClientToServerEvents {
-  join_driver_room: () => void;
-  leave_driver_room: () => void;
-  join_ride_room: (rideId: string) => void;
-  leave_ride_room: (rideId: string) => void;
+  join_room: (data: { roomId: string }) => void;
+  request_ride: (data: CreateRideRequestDto) => Promise<RideRequest>;
+  send_offer: (data: CreateOfferDto) => Promise<Offer>;
+  accept_offer: (data: AcceptOfferDto) => Promise<RideRequest>;
+  update_driver_status: (
+    data: UpdateDriverStatusDto,
+  ) => Promise<{ success: boolean }>;
+  finish_ride: (data: { rideId: string }) => Promise<RideRequest>;
+  rate_ride: (data: RatingDto) => Promise<Rating>;
 }
 ```
 
@@ -556,17 +476,17 @@ interface ClientToServerEvents {
 ```mermaid
 sequenceDiagram
     participant C as Cliente
-    participant S as Server
+    participant S as Server (WebSocket)
     participant D as Chofer
 
-    C->>S: POST /rides/request
-    S->>S: Busca choferes cercanos
-    S->>D: emit("new_ride_request")
-    D->>S: POST /offers
-    S->>C: emit("new_offer")
-    C->>S: POST /offers/:id/accept
-    S->>D: emit("offer_accepted")
-    S->>D: Cambia status a OFFLINE
+    C->>S: emit("request_ride")
+    S->>C: join(`ride_${rideId}`)
+    S->>D: emit("new_ride_request", ride)
+    D->>S: emit("send_offer", offerData)
+    S->>C: emit("new_offer", offer)
+    C->>S: emit("accept_offer", {rideId, offerId})
+    S->>D: emit("offer_accepted", ride)
+    S->>D: emit("ride_matched", ride)
 ```
 
 ---
@@ -695,21 +615,14 @@ graph LR
 
 ## Technology Stack Summary
 
-| Layer              | Technology          | Purpose                   | Local config |
-| ------------------ | ------------------- | ------------------------- | ------------ |
-| **Mobile**         | React Native + Expo | Cross-platform app        | Port 8081    |
-| **Navigation**     | Expo Router         | File-based routing        | -            |
-| **State (Server)** | TanStack Query      | Server state management   | -            |
-| **State (Client)** | Zustand             | Client state management   | -            |
-| **Real-time**      | Socket.io Client    | WebSocket communication   | v4.x         |
-| **API**            | NestJS + TypeScript | Backend framework         | Port 3000    |
-| **Database**       | PostgreSQL 16       | Primary data store        | Port 5433    |
-| **Geospatial**     | PostGIS             | Geographic queries        | Enabled      |
-| **Cache**          | Redis 7             | Caching + token storage   | Optional     |
-| **ORM**            | Prisma              | Type-safe database access | v5.x         |
-| **Auth**           | JWT + bcrypt        | Authentication            | -            |
-| **File Upload**    | Multer + Local      | Document storage          | /uploads     |
-| **Queue**          | Bull                | Async job processing      | -            |
-| **Notifications**  | Expo Notifications  | Push notifications        | -            |
-| **Deployment**     | Railway/Render      | Container hosting         | -            |
-| **Monitoring**     | Sentry              | Error tracking            | -            |
+| Layer           | Technology          | Purpose                   | Local config |
+| --------------- | ------------------- | ------------------------- | ------------ |
+| **Mobile**      | React Native + Expo | Cross-platform app        | Port 8080    |
+| **Navigation**  | Expo Router         | File-based routing        | -            |
+| **Real-time**   | Socket.io Client    | WebSocket communication   | v4.x         |
+| **API**         | NestJS + TypeScript | Backend framework         | Port 3000    |
+| **Database**    | PostgreSQL 16       | Primary data store        | Port 5433    |
+| **ORM**         | Prisma              | Type-safe database access | v5.x         |
+| **Auth**        | JWT + bcrypt        | Authentication            | -            |
+| **File Upload** | Multer + Local      | Document storage          | /uploads     |
+| **Deployment**  | Railway/Render      | Container hosting         | -            |
