@@ -16,6 +16,7 @@ import {
   Surface,
   Divider,
   IconButton,
+  HelperText,
 } from "react-native-paper";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -23,6 +24,57 @@ import { useAuth } from "../../hooks/useAuth";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAppTheme } from "../../context/ThemeContext";
 import { ThemeSelector } from "../../components/ThemeSelector";
+
+// ─── Reglas de validación ───────────────────────────────────────────────────
+const VALIDATIONS = {
+  username: {
+    regex: /^[a-zA-Z0-9_]{3,30}$/,
+    msg: "Usuario: 3-30 caracteres alfanuméricos o guión bajo",
+  },
+  password: {
+    regex: /^.{8,}$/,
+    msg: "La contraseña debe tener al menos 8 caracteres",
+  },
+  nombre: {
+    regex: /^.{2,50}$/,
+    msg: "El nombre debe tener al menos 2 caracteres",
+  },
+  apellido: {
+    regex: /^.{2,50}$/,
+    msg: "El apellido debe tener al menos 2 caracteres",
+  },
+  dni: { regex: /^\d{7,8}$/, msg: "El DNI debe tener 7 u 8 dígitos numéricos" },
+  licenciaUrl: {
+    regex: /^[A-Z0-9]{5,15}$/i,
+    msg: "Licencia: 5-15 caracteres alfanuméricos (ej: A123456)",
+  },
+  cedulaUrl: {
+    regex: /^[A-Z0-9]{5,15}$/i,
+    msg: "Cédula: 5-15 caracteres alfanuméricos",
+  },
+  habilitacionUrl: {
+    regex: /^[A-Z0-9\-]{3,20}$/i,
+    msg: "Habilitación: 3-20 caracteres alfanuméricos",
+  },
+  maxPassengers: {
+    regex: /^([1-9]|1[0-9]|20)$/,
+    msg: "Ingresá un número entre 1 y 20",
+  },
+  vehicleModel: {
+    regex: /^.{3,60}$/,
+    msg: "El modelo debe tener al menos 3 caracteres",
+  },
+  vehiclePlate: {
+    regex: /^[A-Z]{2,3}\d{3}[A-Z]{0,2}$/i,
+    msg: "Patente inválida. Formatos: ABC123 (viejo) o AB123CD (Mercosur)",
+  },
+  vehicleColor: {
+    regex: /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]{3,20}$/,
+    msg: "El color debe contener solo letras (3-20 caracteres)",
+  },
+};
+
+type FormField = keyof typeof VALIDATIONS;
 
 export default function RegisterChoferScreen() {
   const { theme, colors, isDark } = useAppTheme();
@@ -42,6 +94,10 @@ export default function RegisterChoferScreen() {
     vehicleColor: "",
     themePreference: theme,
   });
+  const [errors, setErrors] = useState<Partial<Record<FormField, string>>>({});
+  const [touched, setTouched] = useState<Partial<Record<FormField, boolean>>>(
+    {},
+  );
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const router = useRouter();
@@ -50,6 +106,31 @@ export default function RegisterChoferScreen() {
   useEffect(() => {
     setFormData((prev) => ({ ...prev, themePreference: theme }));
   }, [theme]);
+
+  const validateField = (field: FormField, value: string): string => {
+    const rule = VALIDATIONS[field];
+    if (!value || !value.trim()) return `Este campo es obligatorio`;
+    if (!rule.regex.test(value)) return rule.msg;
+    return "";
+  };
+
+  const handleChange = (field: FormField, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (touched[field]) {
+      setErrors((prev) => ({ ...prev, [field]: validateField(field, value) }));
+    }
+  };
+
+  const handleBlur = (field: FormField) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setErrors((prev) => ({
+      ...prev,
+      [field]: validateField(
+        field,
+        formData[field as keyof typeof formData] as string,
+      ),
+    }));
+  };
 
   const handlePickImage = async (useCamera: boolean) => {
     let result;
@@ -86,39 +167,45 @@ export default function RegisterChoferScreen() {
   };
 
   const handleRegister = async () => {
-    // Validate all fields
-    const {
-      username,
-      password,
-      nombre,
-      apellido,
-      dni,
-      profilePictureUrl,
-      licenciaUrl,
-      cedulaUrl,
-      habilitacionUrl,
-      vehicleModel,
-      vehiclePlate,
-      vehicleColor,
-    } = formData;
+    // Validar todos los campos antes de enviar
+    const fieldsToValidate: FormField[] = [
+      "username",
+      "password",
+      "nombre",
+      "apellido",
+      "dni",
+      "licenciaUrl",
+      "cedulaUrl",
+      "habilitacionUrl",
+      "maxPassengers",
+      "vehicleModel",
+      "vehiclePlate",
+      "vehicleColor",
+    ];
 
-    if (
-      !username ||
-      !password ||
-      !nombre ||
-      !apellido ||
-      !dni ||
-      !profilePictureUrl ||
-      !licenciaUrl ||
-      !cedulaUrl ||
-      !habilitacionUrl ||
-      !vehicleModel ||
-      !vehiclePlate ||
-      !vehicleColor
-    ) {
+    const newErrors: Partial<Record<FormField, string>> = {};
+    const newTouched: Partial<Record<FormField, boolean>> = {};
+    let hasErrors = false;
+
+    fieldsToValidate.forEach((field) => {
+      newTouched[field] = true;
+      const error = validateField(
+        field,
+        formData[field as keyof typeof formData] as string,
+      );
+      if (error) {
+        newErrors[field] = error;
+        hasErrors = true;
+      }
+    });
+
+    setTouched(newTouched);
+    setErrors(newErrors);
+
+    if (hasErrors) {
       Alert.alert(
-        "Error",
-        "Todos los campos son obligatorios, incluyendo la foto de perfil y la documentación.",
+        "Datos inválidos",
+        "Por favor corregí los campos marcados en rojo.",
       );
       return;
     }
@@ -128,10 +215,11 @@ export default function RegisterChoferScreen() {
       await register({
         ...formData,
         role: "CHOFER",
+        vehiclePlate: formData.vehiclePlate.toUpperCase(),
       });
     } catch (error: any) {
       Alert.alert(
-        "Error",
+        "Error al registrar",
         error.response?.data?.message ||
           "Error al registrar. Verifica los datos.",
       );
@@ -139,6 +227,44 @@ export default function RegisterChoferScreen() {
       setLoading(false);
     }
   };
+
+  // Helper para renderizar campo con error
+  const renderInput = (
+    field: FormField,
+    label: string,
+    options: {
+      keyboardType?: any;
+      secureTextEntry?: boolean;
+      autoCapitalize?: any;
+      placeholder?: string;
+      style?: any;
+    } = {},
+  ) => (
+    <View style={options.style}>
+      <TextInput
+        label={label}
+        value={formData[field as keyof typeof formData] as string}
+        onChangeText={(text) => handleChange(field, text)}
+        onBlur={() => handleBlur(field)}
+        mode="outlined"
+        style={[styles.input, { backgroundColor: colors.surface }]}
+        textColor={colors.text}
+        outlineColor={
+          touched[field] && errors[field] ? colors.error : colors.divider
+        }
+        activeOutlineColor={
+          touched[field] && errors[field] ? colors.error : colors.primary
+        }
+        error={!!(touched[field] && errors[field])}
+        {...options}
+      />
+      {touched[field] && errors[field] ? (
+        <HelperText type="error" visible style={styles.helperText}>
+          {errors[field]}
+        </HelperText>
+      ) : null}
+    </View>
+  );
 
   return (
     <KeyboardAvoidingView
@@ -216,75 +342,22 @@ export default function RegisterChoferScreen() {
             Datos Personales
           </Text>
 
-          <TextInput
-            label="Nombre de usuario"
-            value={formData.username}
-            onChangeText={(text) =>
-              setFormData({ ...formData, username: text })
-            }
-            mode="outlined"
-            autoCapitalize="none"
-            style={styles.input}
-          />
-
-          <TextInput
-            label="Contraseña"
-            value={formData.password}
-            onChangeText={(text) =>
-              setFormData({ ...formData, password: text })
-            }
-            mode="outlined"
-            secureTextEntry
-            style={[styles.input, { backgroundColor: colors.surface }]}
-            textColor={colors.text}
-            outlineColor={colors.divider}
-            activeOutlineColor={colors.primary}
-          />
+          {renderInput("username", "Nombre de usuario", {
+            autoCapitalize: "none",
+          })}
+          {renderInput("password", "Contraseña", { secureTextEntry: true })}
 
           <View style={styles.row}>
-            <TextInput
-              label="Nombre"
-              value={formData.nombre}
-              onChangeText={(text) =>
-                setFormData({ ...formData, nombre: text })
-              }
-              mode="outlined"
-              style={[
-                styles.input,
-                { flex: 1, marginRight: 8, backgroundColor: colors.surface },
-              ]}
-              textColor={colors.text}
-              outlineColor={colors.divider}
-              activeOutlineColor={colors.primary}
-            />
-            <TextInput
-              label="Apellido"
-              value={formData.apellido}
-              onChangeText={(text) =>
-                setFormData({ ...formData, apellido: text })
-              }
-              mode="outlined"
-              style={[
-                styles.input,
-                { flex: 1, backgroundColor: colors.surface },
-              ]}
-              textColor={colors.text}
-              outlineColor={colors.divider}
-              activeOutlineColor={colors.primary}
-            />
+            {renderInput("nombre", "Nombre", {
+              style: { flex: 1, marginRight: 8 },
+            })}
+            {renderInput("apellido", "Apellido", { style: { flex: 1 } })}
           </View>
 
-          <TextInput
-            label="DNI"
-            value={formData.dni}
-            onChangeText={(text) => setFormData({ ...formData, dni: text })}
-            mode="outlined"
-            keyboardType="numeric"
-            style={[styles.input, { backgroundColor: colors.surface }]}
-            textColor={colors.text}
-            outlineColor={colors.divider}
-            activeOutlineColor={colors.primary}
-          />
+          {renderInput("dni", "DNI", {
+            keyboardType: "numeric",
+            placeholder: "Ej: 35123456",
+          })}
 
           <Divider style={styles.divider} />
           <Text
@@ -294,110 +367,35 @@ export default function RegisterChoferScreen() {
             Documentación y Vehículo
           </Text>
 
-          <TextInput
-            label="Nº Licencia de Conducir"
-            value={formData.licenciaUrl}
-            onChangeText={(text) =>
-              setFormData({ ...formData, licenciaUrl: text })
-            }
-            mode="outlined"
-            style={[styles.input, { backgroundColor: colors.surface }]}
-            textColor={colors.text}
-            outlineColor={colors.divider}
-            activeOutlineColor={colors.primary}
-            placeholder="Ej: A123456"
-          />
-
-          <TextInput
-            label="Cédula Verde/Azul"
-            value={formData.cedulaUrl}
-            onChangeText={(text) =>
-              setFormData({ ...formData, cedulaUrl: text })
-            }
-            mode="outlined"
-            style={[styles.input, { backgroundColor: colors.surface }]}
-            textColor={colors.text}
-            outlineColor={colors.divider}
-            activeOutlineColor={colors.primary}
-            placeholder="Nº de Cédula"
-          />
-
-          <TextInput
-            label="Habilitaciones de Transporte"
-            value={formData.habilitacionUrl}
-            onChangeText={(text) =>
-              setFormData({ ...formData, habilitacionUrl: text })
-            }
-            mode="outlined"
-            style={[styles.input, { backgroundColor: colors.surface }]}
-            textColor={colors.text}
-            outlineColor={colors.divider}
-            activeOutlineColor={colors.primary}
-            placeholder="Nº Habilitación Municipal"
-          />
-
-          <TextInput
-            label="Pasajeros Máximos (Moto, Auto, Combi, Bus)"
-            value={formData.maxPassengers}
-            onChangeText={(text) =>
-              setFormData({ ...formData, maxPassengers: text })
-            }
-            mode="outlined"
-            keyboardType="numeric"
-            style={[styles.input, { backgroundColor: colors.surface }]}
-            textColor={colors.text}
-            outlineColor={colors.divider}
-            activeOutlineColor={colors.primary}
-          />
-
-          <TextInput
-            label="Modelo del Vehículo"
-            value={formData.vehicleModel}
-            onChangeText={(text) =>
-              setFormData({ ...formData, vehicleModel: text })
-            }
-            mode="outlined"
-            style={[styles.input, { backgroundColor: colors.surface }]}
-            textColor={colors.text}
-            outlineColor={colors.divider}
-            activeOutlineColor={colors.primary}
-            placeholder="Ej: Fiat Cronos, Toyota Corolla..."
-          />
+          {renderInput("licenciaUrl", "Nº Licencia de Conducir", {
+            placeholder: "Ej: A123456",
+            autoCapitalize: "characters",
+          })}
+          {renderInput("cedulaUrl", "Cédula Verde/Azul", {
+            placeholder: "Nº de Cédula",
+            autoCapitalize: "characters",
+          })}
+          {renderInput("habilitacionUrl", "Habilitaciones de Transporte", {
+            placeholder: "Nº Habilitación Municipal",
+            autoCapitalize: "characters",
+          })}
+          {renderInput("maxPassengers", "Pasajeros Máximos (1-20)", {
+            keyboardType: "numeric",
+          })}
+          {renderInput("vehicleModel", "Modelo del Vehículo", {
+            placeholder: "Ej: Fiat Cronos, Toyota Corolla...",
+          })}
 
           <View style={styles.row}>
-            <TextInput
-              label="Patente"
-              value={formData.vehiclePlate}
-              onChangeText={(text) =>
-                setFormData({ ...formData, vehiclePlate: text })
-              }
-              mode="outlined"
-              style={[
-                styles.input,
-                { flex: 1, marginRight: 8, backgroundColor: colors.surface },
-              ]}
-              textColor={colors.text}
-              outlineColor={colors.divider}
-              activeOutlineColor={colors.primary}
-              autoCapitalize="characters"
-              placeholder="Ej: AF123BC"
-            />
-            <TextInput
-              label="Color"
-              value={formData.vehicleColor}
-              onChangeText={(text) =>
-                setFormData({ ...formData, vehicleColor: text })
-              }
-              mode="outlined"
-              style={[
-                styles.input,
-                { flex: 1, backgroundColor: colors.surface },
-              ]}
-              textColor={colors.text}
-              outlineColor={colors.divider}
-              activeOutlineColor={colors.primary}
-              placeholder="Blanco"
-            />
+            {renderInput("vehiclePlate", "Patente", {
+              style: { flex: 1, marginRight: 8 },
+              autoCapitalize: "characters",
+              placeholder: "Ej: AF123BC",
+            })}
+            {renderInput("vehicleColor", "Color", {
+              style: { flex: 1 },
+              placeholder: "Blanco",
+            })}
           </View>
 
           <Button
@@ -489,7 +487,11 @@ const styles = StyleSheet.create({
     marginVertical: 15,
   },
   input: {
-    marginBottom: 12,
+    marginBottom: 0,
+  },
+  helperText: {
+    marginTop: -4,
+    marginBottom: 6,
   },
   button: {
     marginTop: 25,

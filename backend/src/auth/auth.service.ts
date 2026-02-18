@@ -17,13 +17,13 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    // Check if user already exists
+    // Check if username already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { username: registerDto.username },
     });
 
     if (existingUser) {
-      throw new ConflictException('Username already registered');
+      throw new ConflictException('El nombre de usuario ya está registrado');
     }
 
     // Check if DNI already exists
@@ -32,68 +32,90 @@ export class AuthService {
     });
 
     if (existingDni) {
-      throw new ConflictException('DNI already registered');
+      throw new ConflictException('El DNI ya está registrado');
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-    // Create user and profile in transaction
-    const user = await this.prisma.user.create({
-      data: {
-        username: registerDto.username,
-        password: hashedPassword,
-        role: registerDto.role,
-        profile: {
-          create: {
-            nombre: registerDto.nombre,
-            apellido: registerDto.apellido,
-            dni: registerDto.dni,
-            direccion: registerDto.direccion,
-            profilePictureUrl: registerDto.profilePictureUrl,
-            themePreference: registerDto.themePreference || 'EXECUTIVE',
-          },
-        },
-        ...(registerDto.role === Role.CHOFER && {
-          driverDocs: {
+    try {
+      // Create user and profile in transaction
+      const user = await this.prisma.user.create({
+        data: {
+          username: registerDto.username,
+          password: hashedPassword,
+          role: registerDto.role,
+          profile: {
             create: {
-              licenciaUrl: registerDto.licenciaUrl,
-              cedulaUrl: registerDto.cedulaUrl,
-              habilitacionUrl: registerDto.habilitacionUrl,
-              maxPassengers: registerDto.maxPassengers
-                ? parseInt(registerDto.maxPassengers, 10)
-                : null,
-              vehicleModel: registerDto.vehicleModel,
-              vehiclePlate: registerDto.vehiclePlate,
-              vehicleColor: registerDto.vehicleColor,
+              nombre: registerDto.nombre,
+              apellido: registerDto.apellido,
+              dni: registerDto.dni,
+              direccion: registerDto.direccion,
+              profilePictureUrl: registerDto.profilePictureUrl,
+              themePreference: registerDto.themePreference || 'EXECUTIVE',
             },
           },
-        }),
-      },
-      include: {
-        profile: true,
-        driverDocs: true,
-      },
-    });
+          ...(registerDto.role === Role.CHOFER && {
+            driverDocs: {
+              create: {
+                licenciaUrl: registerDto.licenciaUrl,
+                cedulaUrl: registerDto.cedulaUrl,
+                habilitacionUrl: registerDto.habilitacionUrl,
+                maxPassengers: registerDto.maxPassengers ?? null,
+                vehicleModel: registerDto.vehicleModel,
+                vehiclePlate: registerDto.vehiclePlate
+                  ? registerDto.vehiclePlate.toUpperCase()
+                  : undefined,
+                vehicleColor: registerDto.vehicleColor,
+              },
+            },
+          }),
+        },
+        include: {
+          profile: true,
+          driverDocs: true,
+        },
+      });
 
-    // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.username, user.role);
+      // Generate tokens
+      const tokens = await this.generateTokens(
+        user.id,
+        user.username,
+        user.role,
+      );
 
-    return {
-      ...tokens,
-      user: {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        profile: user.profile
-          ? {
-              nombre: user.profile.nombre,
-              apellido: user.profile.apellido,
-              themePreference: user.profile.themePreference,
-            }
-          : undefined,
-      },
-    };
+      return {
+        ...tokens,
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          profile: user.profile
+            ? {
+                nombre: user.profile.nombre,
+                apellido: user.profile.apellido,
+                themePreference: user.profile.themePreference,
+              }
+            : undefined,
+        },
+      };
+    } catch (error: any) {
+      // Manejar errores de unicidad de Prisma (P2002 = unique constraint violation)
+      if (error.code === 'P2002') {
+        const fieldMap: Record<string, string> = {
+          licenciaUrl: 'El número de licencia ya está registrado',
+          cedulaUrl: 'El número de cédula ya está registrado',
+          vehiclePlate: 'La patente ya está registrada',
+          username: 'El nombre de usuario ya está registrado',
+          dni: 'El DNI ya está registrado',
+        };
+        const field = error.meta?.target?.[0] as string;
+        throw new ConflictException(
+          fieldMap[field] || `El campo '${field}' ya está registrado`,
+        );
+      }
+      throw error;
+    }
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {

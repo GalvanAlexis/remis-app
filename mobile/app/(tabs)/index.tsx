@@ -40,6 +40,7 @@ export default function HomeScreen() {
   const [detalle, setDetalle] = useState("");
   const [activeRide, setActiveRide] = useState<any>(null);
   const [offers, setOffers] = useState<any[]>([]);
+  const [isRequesting, setIsRequesting] = useState(false);
 
   // Driver States
   const [isOnline, setIsOnline] = useState(false);
@@ -115,7 +116,7 @@ export default function HomeScreen() {
   }, [user?.role, activeRide?.id]);
 
   // Se encarga de la conexión, handshake auth y registro de eventos
-  useSocket(socketEvents);
+  const { isConnected } = useSocket(socketEvents);
 
   const handleFinishRide = () => {
     socketService.emit("finish_ride", { rideId: activeRide.id });
@@ -148,12 +149,21 @@ export default function HomeScreen() {
     Alert.alert("¡Gracias!", "Tu calificación ha sido enviada.");
   };
 
-  const handleRequestRide = () => {
+  const handleRequestRide = async () => {
     if (!origin || !destination) {
       Alert.alert("Error", "Por favor ingresa origen y destino");
       return;
     }
 
+    if (!isConnected) {
+      Alert.alert(
+        "Sin conexión",
+        "No hay conexión con el servidor. Intentá de nuevo en unos segundos.",
+      );
+      return;
+    }
+
+    setIsRequesting(true);
     const data = {
       clientId: user?.id || null,
       guestName: !isAuthenticated ? "Invitado" : null,
@@ -163,11 +173,27 @@ export default function HomeScreen() {
       destAddress: destination,
     };
 
-    socketService.emit("request_ride", data);
-    setOrigin("");
-    setDestination("");
-    setDetalle("");
-    Alert.alert("Solicitado", "Buscando choferes disponibles...");
+    try {
+      const result = await socketService.request("request_ride", data);
+      if (result) {
+        setOrigin("");
+        setDestination("");
+        setDetalle("");
+        Alert.alert(
+          "✅ Solicitado",
+          "Tu pedido fue enviado. Esperando ofertas de choferes...",
+        );
+      } else {
+        Alert.alert(
+          "Error",
+          "No se pudo enviar el pedido. Verificá tu conexión.",
+        );
+      }
+    } catch (e) {
+      Alert.alert("Error", "Ocurrió un error al enviar el pedido.");
+    } finally {
+      setIsRequesting(false);
+    }
   };
 
   const handleSendOffer = () => {
@@ -330,11 +356,17 @@ export default function HomeScreen() {
               mode="contained"
               onPress={handleRequestRide}
               style={styles.actionButton}
-              buttonColor={colors.primary}
+              buttonColor={isConnected ? colors.primary : colors.divider}
               contentStyle={{ height: 50 }}
               textColor="white"
+              disabled={isRequesting || !isConnected}
+              loading={isRequesting}
             >
-              Pedir Remis Ahora
+              {isRequesting
+                ? "Enviando..."
+                : isConnected
+                  ? "Pedir Remis Ahora"
+                  : "Conectando..."}
             </Button>
           </Surface>
 

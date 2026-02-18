@@ -47,8 +47,8 @@ model DriverDocument {
   userId          String    @unique
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  licenciaUrl     String?
-  cedulaUrl       String?
+  licenciaUrl     String?   @unique  // Nº licencia único por chofer
+  cedulaUrl       String?   @unique  // Nº cédula único por vehículo
   habilitacionUrl String?
   maxPassengers   Int?
   isVerified      Boolean   @default(false)
@@ -60,7 +60,7 @@ model DriverDocument {
 
   // Datos del Vehículo
   vehicleModel    String?
-  vehiclePlate    String?
+  vehiclePlate    String?   @unique  // Patente única por vehículo
   vehicleColor    String?
 
   @@map("driver_documents")

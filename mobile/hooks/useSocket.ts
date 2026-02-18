@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { socketService } from "../services/socket.service";
 import { useAuth } from "./useAuth";
 import { authService } from "../services/auth.service";
@@ -10,43 +10,53 @@ export interface SocketEvent {
 
 export const useSocket = (events: SocketEvent[] = []) => {
   const { isAuthenticated, user } = useAuth();
+  // Estado que se actualiza cuando el socket conecta/desconecta
+  const [isConnected, setIsConnected] = useState(socketService.isConnected());
 
+  // Conectar el socket con token cuando cambia el estado de auth
   const connectSocket = useCallback(async () => {
     try {
       const token = await authService.getToken();
       socketService.connect(token || undefined);
     } catch (error) {
       console.error("Failed to connect socket with token:", error);
-      socketService.connect(); // Fallback to guest
+      socketService.connect(); // Fallback a invitado
     }
   }, []);
 
   useEffect(() => {
-    // Conectar/Reconectar cuando cambia el estado de autenticación o el usuario
     connectSocket();
-
-    return () => {
-      // No desconectamos globalmente aquí para evitar cortes en transiciones rápidas
-      // pero podríamos si quisiéramos un cierre total al desmontar la App
-    };
   }, [isAuthenticated, user?.id, connectSocket]);
 
+  // Suscribirse a los eventos de conexión/desconexión para actualizar el estado local
   useEffect(() => {
-    const socket = socketService.getSocket();
-    if (!socket) return;
+    const unsubConnect = socketService.onConnect(() => setIsConnected(true));
+    const unsubDisconnect = socketService.onDisconnect(() =>
+      setIsConnected(false),
+    );
 
-    // Registrar todos los eventos pasados por parámetro
+    return () => {
+      unsubConnect();
+      unsubDisconnect();
+    };
+  }, []);
+
+  // Registrar/desregistrar los eventos de negocio cuando el socket conecta o los eventos cambian
+  useEffect(() => {
+    if (!isConnected) return; // Esperar a que el socket esté conectado
+
+    // Registrar todos los eventos
     events.forEach((event) => {
       socketService.on(event.name, event.handler);
     });
 
     return () => {
-      // Limpiar listeners al desmontar el componente o cambiar eventos
+      // Limpiar listeners al desmontar o cuando cambien los eventos/conexión
       events.forEach((event) => {
         socketService.off(event.name, event.handler);
       });
     };
-  }, [events]);
+  }, [events, isConnected]); // ← isConnected como dependencia: se re-ejecuta cuando el socket conecta
 
-  return socketService;
+  return { socketService, isConnected };
 };

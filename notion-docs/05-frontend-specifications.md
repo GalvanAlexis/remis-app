@@ -99,96 +99,88 @@ interface AuthState {
 
 ---
 
-### 3. Register Driver (`(auth)/register-driver.tsx`)
+### 3. Register Driver (`(auth)/register-chofer.tsx`)
+
+> **Nota:** El archivo real es `register-chofer.tsx`, no `register-driver.tsx`.
 
 **Form Sections:**
 
-**Sección 1: Datos Personales** (igual que cliente)
+**Sección 1: Datos Personales**
 
-**Sección 2: Documentos**
+- Nombre de usuario (único, 3-30 chars alfanuméricos)
+- Contraseña (mínimo 8 caracteres)
+- Nombre y Apellido
+- DNI (7-8 dígitos, único en BD)
+- Foto de perfil (obligatoria, desde cámara o galería)
 
-- Upload DNI frente y dorso
-- Upload Licencia de conducir
-- Upload Cédula verde/azul
-- Upload Habilitaciones de transporte
+**Sección 2: Documentación**
+
+> Los documentos se ingresan como **texto** (número/código), no como imágenes.
+
+| Campo                        | Formato                  | Ejemplo   |
+| ---------------------------- | ------------------------ | --------- |
+| Nº Licencia de Conducir      | 5-15 chars alfanuméricos | `A123456` |
+| Cédula Verde/Azul            | 5-15 chars alfanuméricos | `AB12345` |
+| Habilitaciones de Transporte | 3-20 chars alfanuméricos | `MUN-001` |
 
 **Sección 3: Datos del Vehículo**
 
-- Marca del vehículo
-- Modelo del vehículo
-- Patente (unique)
-- Cantidad máxima de pasajeros (1-8)
-- Foto del vehículo
+| Campo             | Formato                 | Ejemplo              |
+| ----------------- | ----------------------- | -------------------- |
+| Modelo            | Texto libre, 3-60 chars | `Fiat Cronos`        |
+| Patente           | Formato argentino       | `ABC123` o `AB123CD` |
+| Color             | Solo letras, 3-20 chars | `Blanco`             |
+| Pasajeros máximos | Número 1-20             | `4`                  |
+
+**Validaciones Anti-Fraude:**
+
+- DNI, Nº Licencia, Nº Cédula y Patente son **únicos en la BD** (no se puede registrar el mismo documento dos veces)
+- Validación de formato **client-side** con mensajes de error inline
+- Validación de formato **server-side** con `class-validator` (doble capa)
+- Error Prisma `P2002` devuelve mensaje claro en español
 
 **Components:**
 
-- Multi-step form (Stepper)
-- Image picker for documents
-- Preview de imágenes seleccionadas
-- Progress indicator
+- Formulario en una sola pantalla con scroll
+- `HelperText` de error bajo cada campo inválido
+- Validación al perder el foco (blur) y al intentar enviar
+- `ThemeSelector` para elegir tema visual
 
-**State:**
-
-```typescript
-const [step, setStep] = useState(1); // 1-3
-const [formData, setFormData] = useState({
-  personal: { ... },
-  documents: { ... },
-  vehicle: { ... }
-});
-```
-
-**Validation:**
-
-- Each image max 5MB
-- Supported formats: JPG, PNG
-- All documents required
-- Plate format validation
-
----
-
-### 4. Client Home (`(tabs)/(client)/index.tsx`)
+### 4. Client Home (`(tabs)/index.tsx` — vista cliente)
 
 **Layout:**
 
 ```
 ┌──────────────────────────────┐
-│      [Map View - Full]       │
-│   - Current location pin     │
-│   - Origin/destination pins  │
-│                              │
-└──────────────────────────────┘
-┌──────────────────────────────┐
 │  📍 Origen:                  │
 │  [Input: Calle y Número]     │
 │  📍 Destino:                 │
 │  [Input: Calle y Número]     │
-│  [Buscar Choferes] Button    │
+│  [Pedir Remis Ahora] Button  │
 └──────────────────────────────┘
 ```
 
 **Features:**
 
-- Interactive map (react-native-maps)
-- Tap on map to set origin/destination
-- Address autocomplete (optional: Google Places API)
-- Current location button
-- "Buscar Choferes" triggers ride request
+- Inputs de texto para origen y destino
+- Botón "Pedir Remis Ahora" que emite solicitud por WebSocket
+- Lista de ofertas recibidas en tiempo real
+- Tarjeta de viaje activo cuando hay un viaje en curso
 
 **State:**
 
 ```typescript
-const [origin, setOrigin] = useState({ address, lat, lng });
-const [destination, setDestination] = useState({ address, lat, lng });
-const [isSearching, setIsSearching] = useState(false);
+const [origin, setOrigin] = useState("");
+const [destination, setDestination] = useState("");
+const [offers, setOffers] = useState([]);
+const [activeRide, setActiveRide] = useState(null);
 ```
 
 **On Submit:**
 
 ```typescript
-const handleSearchDrivers = async () => {
-  const { data } = await createRideRequest({ origin, destination });
-  navigation.navigate("offers", { rideId: data.rideId });
+const handleRequestRide = () => {
+  socketService.emit("request_ride", { originAddress, destAddress });
 };
 ```
 
@@ -264,7 +256,9 @@ interface OfferCardProps {
 
 ---
 
-### 6. Driver Dashboard (`(tabs)/(driver)/index.tsx`)
+### 6. Driver Dashboard (`(tabs)/index.tsx` — vista chofer)
+
+> **Nota:** Implementado dentro de `(tabs)/index.tsx` como `renderDriverView()`, no en archivo separado.
 
 **Layout:**
 
@@ -278,49 +272,28 @@ interface OfferCardProps {
 │  ┌────────────────────────┐  │
 │  │ 📍 Av. Corrientes 123  │  │
 │  │ 📍 Av. Santa Fe 456    │  │
-│  │ 📏 2.5 km              │  │
 │  │ 👤 Juan P. ✓ Reg       │  │
-│  │        [Ofertar]       │  │
+│  │  [DETALLES] [RESPONDER]│  │
 │  └────────────────────────┘  │
 └──────────────────────────────┘
 ```
 
 **Components:**
 
-- Online/Offline switch (large, prominent)
-- Client preference switch
-- RideRequestCard list
-- Empty state "No hay solicitudes"
+- Online/Offline switch (prominente)
+- Filtro "Solo clientes registrados"
+- Lista de RideRequestCards
+- Dialog para enviar oferta (precio + ETA)
+- Dialog de detalles del pasajero
+- Empty state "Ponte en línea para recibir viajes"
 
 **State:**
 
 ```typescript
 const [isOnline, setIsOnline] = useState(false);
-const [acceptingUnregistered, setAcceptingUnregistered] = useState(true);
-```
-
-**Location Tracking:**
-
-```typescript
-useEffect(() => {
-  if (!isOnline) return;
-
-  const subscription = Location.watchPositionAsync(
-    {
-      accuracy: Location.Accuracy.High,
-      timeInterval: 30000, // 30 seconds
-      distanceInterval: 50, // 50 meters
-    },
-    (location) => {
-      updateDriverLocation({
-        lat: location.coords.latitude,
-        lng: location.coords.longitude,
-      });
-    },
-  );
-
-  return () => subscription.then((sub) => sub.remove());
-}, [isOnline]);
+const [onlyRegistered, setOnlyRegistered] = useState(false);
+const [rideRequests, setRideRequests] = useState([]);
+const [activeRide, setActiveRide] = useState(null);
 ```
 
 **WebSocket Listener:**
@@ -329,21 +302,12 @@ useEffect(() => {
 useEffect(() => {
   if (!isOnline) return;
 
-  socket.emit("join_driver_room");
   socket.on("new_ride_request", (payload) => {
-    // Show push notification
-    sendPushNotification({
-      title: "Nueva solicitud de viaje",
-      body: `${payload.origin} → ${payload.destination}`,
-    });
-
-    // Add to local state
     setRideRequests((prev) => [...prev, payload]);
   });
 
   return () => {
     socket.off("new_ride_request");
-    socket.emit("leave_driver_room");
   };
 }, [isOnline]);
 ```
