@@ -23,6 +23,7 @@ import {
 import { useAuth } from "../../hooks/useAuth";
 import { useRouter } from "expo-router";
 import { socketService } from "../../services/socket.service";
+import { ridesService } from "../../services/rides.service";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useSocket } from "../../hooks/useSocket";
 
@@ -67,7 +68,11 @@ export default function HomeScreen() {
     if (user?.role === "CHOFER") {
       events.push({
         name: "new_ride_request",
-        handler: (ride: any) => setRideRequests((prev) => [ride, ...prev]),
+        handler: (ride: any) => {
+          if (isOnline) {
+            setRideRequests((prev) => [ride, ...prev]);
+          }
+        },
       });
       events.push({
         name: "offer_accepted",
@@ -113,10 +118,29 @@ export default function HomeScreen() {
     });
 
     return events;
-  }, [user?.role, activeRide?.id]);
+  }, [user?.role, activeRide?.id, isOnline]);
 
   // Se encarga de la conexión, handshake auth y registro de eventos
   const { isConnected } = useSocket(socketEvents);
+
+  // Fetch pending rides on connect/status/filter change
+  useEffect(() => {
+    if (user?.role === "CHOFER") {
+      if (isOnline) {
+        // Pequeño retardo (debounce) para asegurar que el DB termine de guardar la preferencia
+        // del filtro "onlyRegistered" antes de solicitar la descarga de nuevos viajes pendientes.
+        const timeout = setTimeout(() => {
+          ridesService
+            .getPendingRides()
+            .then((data) => setRideRequests(data))
+            .catch((e) => console.error("Error fetching pending rides:", e));
+        }, 300);
+        return () => clearTimeout(timeout);
+      } else {
+        setRideRequests([]); // Clear out the list so we don't accidentally accept an old request
+      }
+    }
+  }, [user?.role, isOnline, onlyRegisteredClients]);
 
   const handleFinishRide = () => {
     socketService.emit("finish_ride", { rideId: activeRide.id });

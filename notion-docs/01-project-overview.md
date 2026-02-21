@@ -52,10 +52,8 @@
 - TanStack Query v5 (gestión de estado del servidor)
 - Zustand (gestión de estado del cliente)
 - Socket.io Client (comunicación en tiempo real)
-- Expo Location (geolocalización y GPS)
 - Expo Notifications (notificaciones push)
 - Expo SecureStore (almacenamiento seguro de tokens)
-- React Native Maps (visualización de mapas)
 ```
 
 ### Backend (API-First)
@@ -65,9 +63,7 @@
 - NestJS 10+ (framework backend)
 - TypeScript (strict mode)
 - PostgreSQL 15+ (base de datos principal)
-- PostGIS (extensión para datos geoespaciales)
 - Prisma ORM (ORM type-safe)
-- Redis 7+ (cache + almacenamiento de tokens)
 - Socket.io (WebSocket para real-time)
 - Bull Queue (procesamiento asíncrono)
 - JWT (autenticación stateless)
@@ -113,7 +109,6 @@
 ┌─────────────────────────────────┐
 │   Core Modules                   │
 │  - Auth & Security               │
-│  - Geolocation Service           │
 │  - Matching Algorithm            │
 │  - Notification Service          │
 └───────────┬─────────────────────┘
@@ -122,7 +117,7 @@
             ▼
 ┌──────────────┬──────────────────┐
 │ PostgreSQL   │     Redis        │
-│ + PostGIS    │   (Cache/Tokens) │
+│              │   (Cache/Tokens) │
 └──────────────┴──────────────────┘
 ```
 
@@ -146,12 +141,10 @@
 - Perfiles de usuario
 - Guards y autorización
 
-### Fase 3: Geolocalización & Matching (1 semana)
+### Fase 3: Solicitudes & Matching (1 semana)
 
-- Integración PostGIS
-- Tracking de ubicación en tiempo real
 - Sistema de solicitudes de viaje
-- Algoritmo de matching por cercanía
+- Matching y notificación por WebSocket a choferes online
 - Comunicación Socket.io
 
 ### Fase 4: Ofertas & Confirmaciones (1 semana)

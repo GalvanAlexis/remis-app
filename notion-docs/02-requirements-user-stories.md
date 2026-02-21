@@ -24,9 +24,7 @@ Conductor profesional con vehículo habilitado para transporte de pasajeros.
 
 - Puedo ingresar dirección de origen (texto + número)
 - Puedo ingresar dirección de destino (texto + número)
-- Puedo ver mi ubicación actual en un mapa
-- Puedo seleccionar ubicaciones tocando el mapa
-- El sistema envía mi solicitud a choferes cercanos
+- El sistema envía mi solicitud a choferes online disponibles
 - **Limitación**: Solo 10 solicitudes por hora para usuarios no registrados
 
 ### US-C02: Registrarse como cliente
@@ -170,10 +168,8 @@ Conductor profesional con vehículo habilitado para transporte de pasajeros.
 **Criterios de aceptación:**
 
 - El switch es visible y accesible en la pantalla principal
-- Al activar (ON), el sistema comienza a compartir mi ubicación
+- Al activar (ON), el sistema me marca como disponible y comienzo a recibir solicitudes
 - Al desactivar (OFF), dejo de recibir solicitudes
-- El sistema actualiza mi ubicación cada 30 segundos mientras estoy ON
-- Mi ubicación se borra de Redis al apagar
 
 ### US-D03: Configurar preferencias de clientes
 
@@ -198,13 +194,11 @@ Conductor profesional con vehículo habilitado para transporte de pasajeros.
 
 - Origen del viaje (dirección)
 - Destino del viaje (dirección)
-- Distancia desde mi ubicación actual
 - Si el cliente está registrado (badge)
 - (Si cliente registrado y lo solicita) Datos del cliente
 
 **Criterios de aceptación:**
 
-- Solo recibo solicitudes dentro de un radio de 10km
 - Recibo notificación push + sonido
 - Veo card con la información en lista
 - Puedo ver múltiples solicitudes simultáneas
@@ -299,20 +293,17 @@ Conductor profesional con vehículo habilitado para transporte de pasajeros.
 
 ## User Stories - Sistema
 
-### US-S01: Matching geográfico
+### US-S01: Distribución de solicitudes
 
 **Como** sistema  
-**Quiero** encontrar choferes cercanos al cliente  
-**Para** ofrecer opciones relevantes
+**Quiero** enviar solicitudes a todos los choferes disponibles  
+**Para** maximizar la probabilidad de conseguir un viaje
 
 **Criterios de aceptación:**
 
-- Uso PostGIS para queries geoespaciales eficientes
-- Busco choferes dentro de radio de 10km
 - Filtro por estado online=true
 - Filtro por preferencia de cliente (registrado/no registrado)
-- Ordeno por distancia ascendente
-- Máximo 20 choferes por solicitud
+- Se emite la solicitud vía WebSocket a todos los choferes que cumplan los filtros
 
 ### US-S02: Rate limiting
 
@@ -411,10 +402,8 @@ Conductor profesional con vehículo habilitado para transporte de pasajeros.
 - Clientes no registrados solo ven: nombre, foto, rating del chofer
 - Clientes registrados ven: todo lo anterior + DNI, patente, teléfono
 - Choferes ven datos completos solo de clientes registrados
-- Ubicaciones se borran de Redis al finalizar viaje
 
-### RN-05: Geo-restricción
+### RN-05: Restricciones de solicitudes
 
-- Choferes solo reciben solicitudes dentro de 10km
-- Si no hay choferes cercanos, cliente ve mensaje "Sin choferes disponibles"
+- Si no hay choferes online disponibles, cliente ve mensaje "Sin choferes disponibles"
 - El sistema no permite solicitudes con origen/destino idénticos

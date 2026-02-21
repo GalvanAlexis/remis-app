@@ -114,7 +114,6 @@
 - [x] Parameterized queries (Prisma ORM)
 - [x] No raw SQL with user input
 - [x] Indexes on frequently queried fields
-- [x] Spatial indexes for geolocation (PostGIS)
 - [ ] Database connection pooling
 - [ ] Read replicas for scaling
 - [ ] Automated backups (daily)
@@ -143,7 +142,6 @@
 
 ### ✅ Location Privacy
 
-- [x] Driver locations cached in Redis with TTL
 - [x] Driver locations deleted when going offline
 - [x] Client locations not stored permanently
 - [ ] Location data anonymized after ride completion
@@ -199,7 +197,6 @@
 
 - [x] Request permissions at runtime (not install time)
 - [x] Explain why each permission is needed
-- [x] Location permission only when driver is online
 - [x] Notifications permission asked contextually
 
 ---
@@ -316,4 +313,3 @@
 - [ ] Automated document verification (OCR + AI)
 - [ ] Fraud detection system
 - [ ] Device fingerprinting
-- [ ] Geofencing for ride validation

@@ -347,10 +347,10 @@ model Rating {
 
 ### 3. Rides Module
 
-**Responsabilidades:\*\***
+**Responsabilidades:**
 
 - Creación de solicitudes de viaje
-- Matching de cliente-chofer
+- Matching de cliente-chofer (todos los choferes online disponibles)
 - Gestión de estados del viaje
 - WebSocket para eventos real-time
 
@@ -365,13 +365,12 @@ model Rating {
 
 **WebSocket Events:**
 
-- Emit: `new_ride_request` (a choferes)
+- Emit: `new_ride_request` (a todos los choferes online)
 - Emit: `ride_status_changed` (a participantes)
 
 **Services:**
 
 - `RidesService`: CRUD y lógica de negocio
-- `MatchingService`: Algoritmo de matching
 - `RideCleanupService`: Job para limpiar rides huérfanos
 
 ### 5. Offers Module
@@ -535,11 +534,6 @@ sequenceDiagram
 ### Caching Strategy (Redis)
 
 ```typescript
-// Driver locations cache
-Key: `driver:location:{userId}`
-Value: { lat, lng, updated_at }
-TTL: 60 seconds
-
 // Driver online status
 Key: `driver:online:{userId}`
 Value: { is_online, accepting_unregistered }
@@ -559,13 +553,6 @@ TTL: 60 seconds
 ### Database Indexes
 
 ```sql
--- Geospatial index for driver locations
-CREATE INDEX idx_driver_status_location
-ON driver_status
-USING GIST (
-  ST_SetSRID(ST_MakePoint(current_lng, current_lat), 4326)
-);
-
 -- Compound index for active rides
 CREATE INDEX idx_rides_status_created
 ON rides (status, created_at DESC);

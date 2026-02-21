@@ -369,12 +369,6 @@ const handleSubmit = async () => {
 
 ```
 ┌──────────────────────────────┐
-│      [Map with route]        │
-│   - Driver pin (current)     │
-│   - Origin pin               │
-│   - Destination pin          │
-└──────────────────────────────┘
-┌──────────────────────────────┐
 │  Estado: MATCHED             │
 │  Cliente: Juan Pérez         │
 │  📞 +541112345678            │
@@ -394,11 +388,6 @@ const handleSubmit = async () => {
 
 ```
 ┌──────────────────────────────┐
-│      [Map tracking driver]   │
-│   - Driver pin (realtime)    │
-│   - My location              │
-└──────────────────────────────┘
-┌──────────────────────────────┐
 │  Tu chofer: Carlos González  │
 │  ⭐ 4.8 (120 viajes)          │
 │  🚗 Ford Focus - ABC123      │
@@ -412,14 +401,10 @@ const handleSubmit = async () => {
 └──────────────────────────────┘
 ```
 
-**Real-time Location Updates:**
+**Real-time Status Updates:**
 
 ```typescript
 useEffect(() => {
-  socket.on("driver_location_update", ({ lat, lng }) => {
-    setDriverPosition({ latitude: lat, longitude: lng });
-  });
-
   socket.on("ride_status_changed", ({ newStatus }) => {
     setRideStatus(newStatus);
 
@@ -429,7 +414,6 @@ useEffect(() => {
   });
 
   return () => {
-    socket.off("driver_location_update");
     socket.off("ride_status_changed");
   };
 }, [rideId]);
@@ -603,15 +587,6 @@ interface StarRatingProps {
   size?: number;
   disabled?: boolean;
 }
-
-// components/MapView.tsx
-interface MapViewProps {
-  origin?: { latitude: number; longitude: number };
-  destination?: { latitude: number; longitude: number };
-  driverLocation?: { latitude: number; longitude: number };
-  onOriginChange?: (coords) => void;
-  onDestinationChange?: (coords) => void;
-}
 ```
 
 ---
@@ -638,7 +613,7 @@ export const useSocket = () => {
   useEffect(() => {
     if (accessToken) {
       socket.current = io(API_URL, {
-        auth: { token: accessToken }
+        auth: { token: accessToken },
       });
     }
 
@@ -646,20 +621,6 @@ export const useSocket = () => {
   }, [accessToken]);
 
   return socket.current;
-};
-
-// hooks/useLocation.ts
-export const useLocation = (enabled: boolean) => {
-  const [location, setLocation] = useState(null);
-
-  useEffect(() => {
-    if (!enabled) return;
-
-    const watch = Location.watchPositionAsync({ ... }, setLocation);
-    return () => watch.then(w => w.remove());
-  }, [enabled]);
-
-  return location;
 };
 ```
 

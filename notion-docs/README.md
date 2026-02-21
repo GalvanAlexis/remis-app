@@ -73,7 +73,7 @@ npx expo start --clear
 
 - Diagrama de arquitectura (Mermaid)
 - Schema completo de base de datos (Prisma)
-- 7 módulos del backend (Auth, Users, Geolocation, Rides, Offers, Ratings, Notifications)
+- 6 módulos del backend (Auth, Users, Rides, Offers, Ratings, Notifications)
 - Flujos de comunicación real-time (Socket.io)
 - Estrategia de seguridad y caching (Redis)
 
@@ -102,7 +102,7 @@ npx expo start --clear
 - 11 pantallas principales con layouts
 - Estructura de navegación (Expo Router)
 - Componentes reutilizables
-- Hooks personalizados (useAuth, useSocket, useLocation)
+- Hooks personalizados (useAuth, useSocket)
 - Design tokens y tema
 
 **Usa esto** para implementar la UI mobile y mantener consistencia visual.
@@ -129,7 +129,7 @@ npx expo start --clear
 
 - Setup de Railway (backend)
 - Setup de EAS Expo (mobile)
-- Configuración de PostgreSQL + PostGIS
+- Configuración de PostgreSQL
 - CI/CD con GitHub Actions
 - Monitoreo con Sentry
 - Estrategia de rollback
@@ -194,14 +194,14 @@ npx expo start --clear
 ```
 React Native + Expo + TypeScript
 TanStack Query + Zustand + Socket.io Client
-Expo Location + Expo Notifications
+Expo Notifications
 ```
 
 ### Backend
 
 ```
 NestJS + TypeScript + Prisma ORM
-PostgreSQL + PostGIS + Redis
+PostgreSQL + Redis
 Socket.io + Bull Queue + JWT
 ```
 

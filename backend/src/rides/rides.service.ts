@@ -203,6 +203,49 @@ export class RidesService {
     });
   }
 
+  async getHistory(userId: string, role: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+
+    const whereClause =
+      role === 'CLIENTE'
+        ? {
+            clientId: userId,
+            status: { in: ['COMPLETED', 'CANCELLED'] as any },
+          }
+        : {
+            // CHOFER: viajes que condujo (tiene oferta aceptada como ganador)
+            selectedOffer: { driverId: userId },
+            status: { in: ['COMPLETED', 'CANCELLED'] as any },
+          };
+
+    const [rides, total] = await this.prisma.$transaction([
+      this.prisma.rideRequest.findMany({
+        where: whereClause,
+        include: {
+          client: { include: { profile: true } },
+          selectedOffer: {
+            include: {
+              driver: { include: { profile: true } },
+            },
+          },
+          rating: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.rideRequest.count({ where: whereClause }),
+    ]);
+
+    return {
+      data: rides,
+      total,
+      page,
+      limit,
+      hasMore: skip + rides.length < total,
+    };
+  }
+
   async getRatingsForUser(targetUserId: string, requesterRole: string) {
     // Definir filtros de visibilidad
     let whereClause: any = { toUserId: targetUserId };

@@ -17,9 +17,12 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
+    // Normalizar username a minúsculas para búsqueda case-insensitive
+    const normalizedUsername = registerDto.username.toLowerCase().trim();
+
     // Check if username already exists
     const existingUser = await this.prisma.user.findUnique({
-      where: { username: registerDto.username },
+      where: { username: normalizedUsername },
     });
 
     if (existingUser) {
@@ -42,7 +45,7 @@ export class AuthService {
       // Create user and profile in transaction
       const user = await this.prisma.user.create({
         data: {
-          username: registerDto.username,
+          username: normalizedUsername,
           password: hashedPassword,
           role: registerDto.role,
           profile: {
@@ -119,9 +122,12 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
+    // Normalizar username a minúsculas para login case-insensitive
+    const normalizedUsername = loginDto.username.toLowerCase().trim();
+
     // Find user
     const user = await this.prisma.user.findUnique({
-      where: { username: loginDto.username },
+      where: { username: normalizedUsername },
       include: { profile: true },
     });
 

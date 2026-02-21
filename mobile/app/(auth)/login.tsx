@@ -6,8 +6,8 @@ import {
   Platform,
   ScrollView,
   Alert,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, TextInput, Button, Surface } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../hooks/useAuth";

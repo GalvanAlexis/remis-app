@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(profile);
       }
     } catch (error) {
-      console.error("Auth check failed:", error);
+      // Silencioso: si falla el checkeo es porque el token expiro o no hay sesion local.
       await authService.logout();
     } finally {
       setIsLoading(false);

@@ -1,0 +1,6 @@
+feat(rides): auto-fetch de viajes pendientes y limpieza de logs móviles
+
+- Backend: Se eliminó la función duplicada de getPendingRides y se ajustó el controlador para que use correctamente el ID del chofer.
+- Mobile (Servicios): Se agregó el método getPendingRides al servicio de rides.
+- Mobile (UI): La pantalla principal ahora descarga automáticamente la lista de clientes en espera al ponerse "En Línea" o al alternar el filtro de "Solo registrados" (usando un debounce para fluidez).
+- Mobile (Debug): Se filtraron los mensajes informativos inofensivos (RootLayoutNav Rendering, Unauthorized request, etc.) en el interceptor global para evitar hacer "spam" en la consola del servidor.

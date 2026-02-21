@@ -31,6 +31,23 @@ if (__DEV__) {
       .map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a)))
       .join(" ");
 
+    // Ignorar logs inofensivos para no ensuciar el Backend
+    const ignoredPhrases = [
+      "RootLayoutNav Rendering",
+      "Unauthorized request, clearing session",
+      "Connected to Socket.io server",
+      "Disconnected from Socket.io server",
+    ];
+    if (ignoredPhrases.some((phrase) => message.includes(phrase))) {
+      return;
+    }
+
+    if (type === "LOG" || type === "WARN") {
+      // Opcional: Si quieres ignorar TODOS los logs y warnings genéricos,
+      // también puedes poner: return;
+      // Por ahora solo filtramos las frases ignoradas arriba.
+    }
+
     fetch(`${apiUrl}/debug/log`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -63,7 +63,6 @@ RATE_LIMIT_MAX_REQUESTS=100
 ```bash
 EXPO_PUBLIC_API_URL=https://api-remis.railway.app/api/v1
 EXPO_PUBLIC_WS_URL=wss://api-remis.railway.app
-EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_key (optional)
 ```
 
 ---
@@ -78,10 +77,6 @@ psql -U postgres
 
 # Create database
 CREATE DATABASE remis_db;
-
-# Enable PostGIS extension
-\c remis_db
-CREATE EXTENSION IF NOT EXISTS postgis;
 ```
 
 ### 2. Run Prisma Migrations
@@ -136,15 +131,7 @@ npx prisma db seed
    - Add all variables from `.env` template
    - DATABASE_URL and Redis variables are auto-populated
 
-6. **Enable PostGIS**
-
-   ```bash
-   # Connect to Railway PostgreSQL via CLI
-   railway connect PostgreSQL
-   CREATE EXTENSION IF NOT EXISTS postgis;
-   ```
-
-7. **Deploy**
+6. **Deploy**
    - Railway auto-deploys on every push to main
    - View logs in Railway dashboard
 
@@ -250,33 +237,16 @@ This creates `eas.json`:
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.remisapp",
-      "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Necesitamos tu ubicación para mostrarte choferes cercanos",
-        "NSLocationAlwaysUsageDescription": "Los choferes necesitan compartir su ubicación para recibir solicitudes"
-      }
+      "bundleIdentifier": "com.yourcompany.remisapp"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2563EB"
       },
-      "package": "com.yourcompany.remisapp",
-      "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION"
-      ]
+      "package": "com.yourcompany.remisapp"
     },
-    "plugins": [
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Permite que $(PRODUCT_NAME) acceda a tu ubicación."
-        }
-      ],
-      "expo-notifications"
-    ],
+    "plugins": ["expo-notifications"],
     "extra": {
       "eas": {
         "projectId": "your-project-id"
@@ -340,7 +310,7 @@ jobs:
 
     services:
       postgres:
-        image: postgis/postgis:15-3.3
+        image: postgres:15-alpine
         env:
           POSTGRES_PASSWORD: postgres
         options: >-
@@ -610,7 +580,6 @@ eas submit
 Redis is used for cache and ephemeral data only. No critical data loss if Redis fails.
 
 - Refresh tokens: Users will need to re-login
-- Driver locations: Will be repopulated when drivers go online
 - Rate limiting: Resets (acceptable)
 
 ### Application Disaster Recovery

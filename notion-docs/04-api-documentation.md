@@ -320,11 +320,7 @@ Authorization: Bearer <access_token> (optional for guests)
 ```json
 {
   "originAddress": "Av. Corrientes 1234",
-  "originLat": -34.603722,
-  "originLng": -58.381592,
-  "destinationAddress": "Av. Santa Fe 5678",
-  "destinationLat": -34.593722,
-  "destinationLng": -58.391592
+  "destinationAddress": "Av. Santa Fe 5678"
 }
 ```
 
@@ -694,7 +690,6 @@ socket.on("new_ride_request", (payload) => {
     destination: string;
     clientName: string;
     isClientRegistered: boolean;
-    distance: number; // meters
   }
 });
 ```

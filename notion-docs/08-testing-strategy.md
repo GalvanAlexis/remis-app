@@ -90,58 +90,6 @@ describe('AuthService', () => {
 });
 ```
 
-#### Geolocation Service Tests
-
-```typescript
-// geolocation.service.spec.ts
-describe("GeolocationService", () => {
-  describe("calculateDistance", () => {
-    it("should calculate correct distance between two points", () => {
-      const point1 = { lat: -34.603722, lng: -58.381592 }; // Buenos Aires
-      const point2 = { lat: -34.605722, lng: -58.385592 };
-
-      const distance = service.calculateDistance(point1, point2);
-
-      expect(distance).toBeCloseTo(450, 0); // ~450 meters
-    });
-  });
-
-  describe("findNearbyDrivers", () => {
-    it("should return drivers within radius", async () => {
-      // Seed test data
-      await prisma.driverStatus.createMany({
-        data: [
-          {
-            userId: "1",
-            isOnline: true,
-            currentLat: -34.603,
-            currentLng: -58.381,
-          },
-          {
-            userId: "2",
-            isOnline: true,
-            currentLat: -34.604,
-            currentLng: -58.382,
-          },
-          { userId: "3", isOnline: true, currentLat: -35.0, currentLng: -60.0 }, // Far away
-        ],
-      });
-
-      const drivers = await service.findNearbyDrivers(
-        -34.603722,
-        -58.381592,
-        1000,
-      ); // 1km
-
-      expect(drivers).toHaveLength(2);
-      expect(drivers.map((d) => d.userId)).toContain("1");
-      expect(drivers.map((d) => d.userId)).toContain("2");
-      expect(drivers.map((d) => d.userId)).not.toContain("3");
-    });
-  });
-});
-```
-
 ### Frontend Unit Tests
 
 **Framework**: Jest + React Native Testing Library
@@ -339,11 +287,7 @@ describe("Ride Flow (e2e)", () => {
       .set("Authorization", `Bearer ${clientToken}`)
       .send({
         originAddress: "Av. Corrientes 1234",
-        originLat: -34.603722,
-        originLng: -58.381592,
         destinationAddress: "Av. Santa Fe 5678",
-        destinationLat: -34.593722,
-        destinationLng: -58.391592,
       })
       .expect(201);
 
@@ -507,11 +451,7 @@ export default function () {
   // Test ride request endpoint
   const payload = JSON.stringify({
     originAddress: "Test Origin",
-    originLat: -34.603722,
-    originLng: -58.381592,
     destinationAddress: "Test Destination",
-    destinationLat: -34.593722,
-    destinationLng: -58.391592,
   });
 
   const params = {
@@ -558,7 +498,7 @@ npm run test -- --coverage
 
 | Layer        | Target              | Critical Paths                   |
 | ------------ | ------------------- | -------------------------------- |
-| **Backend**  | 80%+                | Auth, Rides, Geolocation         |
+| **Backend**  | 80%+                | Auth, Rides, Offers              |
 | **Frontend** | 70%+                | Auth flows, Forms, Components    |
 | **E2E**      | Critical paths only | Request ride, Accept offer, Rate |
 
