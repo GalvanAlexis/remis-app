@@ -132,7 +132,10 @@ export class RidesService {
           selectedOffer: {
             include: {
               driver: {
-                include: { profile: true },
+                include: {
+                  profile: true,
+                  driverDocument: true,
+                },
               },
             },
           },
