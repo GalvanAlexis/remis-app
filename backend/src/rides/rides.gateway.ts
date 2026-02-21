@@ -168,4 +168,17 @@ export class RidesGateway implements OnGatewayConnection {
     const user = client.data.user;
     return this.ridesService.getRatingsForUser(data.targetUserId, user.role);
   }
+
+  @SubscribeMessage('expire_ride')
+  async handleExpireRide(@MessageBody() data: { rideId: string }) {
+    try {
+      const ride = await this.ridesService.expireRide(data.rideId);
+      // Notificar al cliente que su pedido expiró
+      this.server.emit('ride_expired', { rideId: data.rideId });
+      return ride;
+    } catch (error) {
+      console.error('Error in expire_ride:', error);
+      throw error;
+    }
+  }
 }

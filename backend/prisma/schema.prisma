@@ -139,6 +139,7 @@ enum RideStatus {
   MATCHED
   COMPLETED
   CANCELLED
+  EXPIRED
 }
 
 enum OfferStatus {

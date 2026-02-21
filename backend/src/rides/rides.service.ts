@@ -134,7 +134,7 @@ export class RidesService {
               driver: {
                 include: {
                   profile: true,
-                  driverDocument: true,
+                  driverDocs: true,
                 },
               },
             },
@@ -218,7 +218,7 @@ export class RidesService {
         : {
             // CHOFER: viajes que condujo (tiene oferta aceptada como ganador)
             selectedOffer: { driverId: userId },
-            status: { in: ['COMPLETED', 'CANCELLED'] as any },
+            status: { in: ['COMPLETED', 'CANCELLED', 'EXPIRED'] as any },
           };
 
     const [rides, total] = await this.prisma.$transaction([
@@ -247,6 +247,13 @@ export class RidesService {
       limit,
       hasMore: skip + rides.length < total,
     };
+  }
+
+  async expireRide(rideId: string) {
+    return this.prisma.rideRequest.update({
+      where: { id: rideId },
+      data: { status: RideStatus.EXPIRED },
+    });
   }
 
   async getRatingsForUser(targetUserId: string, requesterRole: string) {
