@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -38,6 +39,52 @@ export class AuthService {
       throw new ConflictException('El DNI ya está registrado');
     }
 
+    // Validaciones de unicidad para documentos del chofer
+    if (registerDto.role === Role.CHOFER) {
+      const plate = registerDto.vehiclePlate?.toUpperCase();
+
+      const [dupLicencia, dupCedula, dupHabilitacion, dupPatente] =
+        await Promise.all([
+          registerDto.licenciaUrl
+            ? this.prisma.driverDocument.findUnique({
+                where: { licenciaUrl: registerDto.licenciaUrl },
+              })
+            : null,
+          registerDto.cedulaUrl
+            ? this.prisma.driverDocument.findUnique({
+                where: { cedulaUrl: registerDto.cedulaUrl },
+              })
+            : null,
+          registerDto.habilitacionUrl
+            ? this.prisma.driverDocument.findUnique({
+                where: { habilitacionUrl: registerDto.habilitacionUrl },
+              })
+            : null,
+          plate
+            ? this.prisma.driverDocument.findUnique({
+                where: { vehiclePlate: plate },
+              })
+            : null,
+        ]);
+
+      if (dupLicencia)
+        throw new ConflictException(
+          'El número de licencia ya está registrado en otro chofer',
+        );
+      if (dupCedula)
+        throw new ConflictException(
+          'La cédula verde/azul ya está registrada en otro vehículo',
+        );
+      if (dupHabilitacion)
+        throw new ConflictException(
+          'El número de habilitación ya está registrado',
+        );
+      if (dupPatente)
+        throw new ConflictException(
+          'La patente ya está registrada en otro vehículo',
+        );
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
@@ -70,6 +117,10 @@ export class AuthService {
                   ? registerDto.vehiclePlate.toUpperCase()
                   : undefined,
                 vehicleColor: registerDto.vehicleColor,
+                // Auto-verificación: el formato ya fue validado por el DTO,
+                // la unicidad por los checks anteriores. No hay admin manual.
+                isVerified: true,
+                verifiedAt: new Date(),
               },
             },
           }),

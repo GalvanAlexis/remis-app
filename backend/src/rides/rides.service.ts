@@ -78,7 +78,11 @@ export class RidesService {
       },
       include: {
         driver: {
-          include: { profile: true },
+          include: {
+            profile: true,
+            driverDocs: true,
+            ratingsReceived: { select: { score: true } },
+          },
         },
       },
     });
@@ -167,7 +171,10 @@ export class RidesService {
       },
       include: {
         client: {
-          include: { profile: true },
+          include: {
+            profile: true,
+            ratingsReceived: { select: { score: true } },
+          },
         },
         offers: {
           where: { driverId },
@@ -249,6 +256,97 @@ export class RidesService {
     };
   }
 
+  async startRide(rideId: string) {
+    const ride = await this.prisma.rideRequest.findUnique({
+      where: { id: rideId },
+    });
+
+    if (!ride) {
+      throw new NotFoundException('Viaje no encontrado');
+    }
+
+    // El chofer puede iniciar desde MATCHED (saltó el paso de AT_LOCATION)
+    // o desde AT_LOCATION (ya estaba esperando al cliente)
+    if (
+      ride.status !== RideStatus.MATCHED &&
+      ride.status !== RideStatus.AT_LOCATION
+    ) {
+      throw new BadRequestException(
+        'Solo se puede iniciar un viaje en estado MATCHED o AT_LOCATION',
+      );
+    }
+
+    return this.prisma.rideRequest.update({
+      where: { id: rideId },
+      data: { status: RideStatus.IN_PROGRESS },
+      include: {
+        client: { include: { profile: true } },
+        selectedOffer: { include: { driver: { include: { profile: true } } } },
+      },
+    });
+  }
+
+  async markAtLocation(rideId: string) {
+    const ride = await this.prisma.rideRequest.findUnique({
+      where: { id: rideId },
+    });
+
+    if (!ride) throw new NotFoundException('Viaje no encontrado');
+
+    if (ride.status !== RideStatus.MATCHED) {
+      throw new BadRequestException(
+        'El chofer debe estar en camino (MATCHED) para marcar llegada',
+      );
+    }
+
+    return this.prisma.rideRequest.update({
+      where: { id: rideId },
+      data: { status: RideStatus.AT_LOCATION },
+      include: {
+        client: { include: { profile: true } },
+        selectedOffer: { include: { driver: { include: { profile: true } } } },
+      },
+    });
+  }
+
+  async cancelRide(rideId: string, clientId: string) {
+    const ride = await this.prisma.rideRequest.findUnique({
+      where: { id: rideId },
+    });
+
+    if (!ride) {
+      throw new NotFoundException('Viaje no encontrado');
+    }
+
+    // Solo se puede cancelar si está en MATCHED (no durante IN_PROGRESS)
+    if (ride.status !== RideStatus.MATCHED) {
+      throw new BadRequestException(
+        'Solo podés cancelar un viaje confirmado (MATCHED)',
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // Marcar el viaje como cancelado
+      const cancelled = await tx.rideRequest.update({
+        where: { id: rideId },
+        data: { status: RideStatus.CANCELLED },
+        include: {
+          selectedOffer: true,
+        },
+      });
+
+      // Volver a poner al chofer online (puede recibir nuevos viajes)
+      if (cancelled.selectedOffer?.driverId) {
+        await tx.driverDocument.update({
+          where: { userId: cancelled.selectedOffer.driverId },
+          data: { isOnline: true },
+        });
+      }
+
+      return cancelled;
+    });
+  }
+
   async expireRide(rideId: string) {
     return this.prisma.rideRequest.update({
       where: { id: rideId },
@@ -279,5 +377,13 @@ export class RidesService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async getRideOwner(rideId: string): Promise<string | null> {
+    const ride = await this.prisma.rideRequest.findUnique({
+      where: { id: rideId },
+      select: { clientId: true },
+    });
+    return ride?.clientId ?? null;
   }
 }

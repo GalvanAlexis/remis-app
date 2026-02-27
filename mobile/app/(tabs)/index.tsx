@@ -27,6 +27,65 @@ import { ridesService } from "../../services/rides.service";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useSocket } from "../../hooks/useSocket";
 
+const EXPIRE_SECONDS_GLOBAL = 3600;
+
+const RideTimerDisplay = ({
+  createdAt,
+  onExpire,
+}: {
+  createdAt: string | Date;
+  onExpire?: () => void;
+}) => {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!createdAt) return;
+    const startMs = new Date(createdAt).getTime();
+
+    const updateTimer = () => {
+      const nowMs = Date.now();
+      const currentElapsed = Math.floor((nowMs - startMs) / 1000);
+      setElapsed(currentElapsed);
+      if (currentElapsed >= EXPIRE_SECONDS_GLOBAL && onExpire) {
+        onExpire();
+      }
+      return currentElapsed;
+    };
+
+    const initial = updateTimer();
+    if (initial >= EXPIRE_SECONDS_GLOBAL) return; // Ya expirado
+
+    const interval = setInterval(() => {
+      const current = updateTimer();
+      if (current >= EXPIRE_SECONDS_GLOBAL) {
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [createdAt, onExpire]);
+
+  if (elapsed >= EXPIRE_SECONDS_GLOBAL) {
+    return (
+      <Text style={{ color: "#EF4444", fontWeight: "bold", fontSize: 13 }}>
+        Expirado
+      </Text>
+    );
+  }
+
+  const remaining = Math.max(0, EXPIRE_SECONDS_GLOBAL - elapsed);
+  const m = Math.floor(remaining / 60)
+    .toString()
+    .padStart(2, "0");
+  const s = (remaining % 60).toString().padStart(2, "0");
+
+  return (
+    <Text style={{ color: "#F59E0B", fontWeight: "bold", fontSize: 13 }}>
+      ⏱ Faltan {m}:{s}
+    </Text>
+  );
+};
+
 export default function HomeScreen() {
   const { theme, colors, isDark } = useAppTheme();
   const { user, isAuthenticated } = useAuth();
@@ -45,6 +104,7 @@ export default function HomeScreen() {
   const [pendingRideId, setPendingRideId] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const EXPIRE_SECONDS = 60 * 60; // 1 hour
+  const [offerSort, setOfferSort] = useState<"price" | "eta">("price");
 
   // Driver States
   const [isOnline, setIsOnline] = useState(false);
@@ -103,10 +163,60 @@ export default function HomeScreen() {
         },
       });
       events.push({
+        name: "ride_started",
+        handler: (ride: any) => {
+          setActiveRide(ride);
+          Alert.alert("En camino", "El chofer ya te recogió. ¡Buen viaje!");
+        },
+      });
+      events.push({
         name: "ride_completed",
         handler: (ride: any) => {
           setActiveRide(ride);
           setRatingDialogVisible(true);
+        },
+      });
+      events.push({
+        name: "ride_cancelled",
+        handler: () => {
+          setActiveRide(null);
+          Alert.alert(
+            "Viaje Cancelado",
+            "El viaje fue cancelado. Pods pedir otro en cualquier momento.",
+          );
+        },
+      });
+      // Chofer en camino (se emite al aceptar la oferta)
+      events.push({
+        name: "driver_en_camino",
+        handler: ({ ride, driverName }: any) => {
+          setActiveRide(ride);
+          Alert.alert(
+            "\uD83D\uDE97 \u00A1Tu chofer est\u00E1 en camino!",
+            `${driverName} ya va para all\u00E1. Prep\u00E1rate en el punto de encuentro.`,
+          );
+        },
+      });
+      // Chofer lleg al lugar
+      events.push({
+        name: "driver_at_location",
+        handler: ({ ride }: any) => {
+          setActiveRide(ride);
+          Alert.alert(
+            "\uD83D\uDCCD \u00A1Tu remis lleg\u00F3!",
+            "El chofer te est\u00E1 esperando en el punto de encuentro.",
+          );
+        },
+      });
+      // Bocina del chofer
+      events.push({
+        name: "horn_beep",
+        handler: ({ driverName }: any) => {
+          Alert.alert(
+            "\uD83D\uDCE3 \u00A1Beep beep!",
+            `${driverName} te est\u00E1 avisando. \u00A1Ya baj\u00E1!`,
+            [{ text: "\u00A1Ya voy!" }],
+          );
         },
       });
     }
@@ -121,8 +231,25 @@ export default function HomeScreen() {
     });
 
     events.push({
+      name: "ride_cancelled_global",
+      handler: (data: any) => {
+        if (user?.role === "CHOFER" && activeRide?.id === data.rideId) {
+          setActiveRide(null);
+          setIsOnline(true); // El chofer vuelve a estar disponible automáticamente
+          Alert.alert(
+            "Viaje Cancelado",
+            "El cliente canceló el viaje. Volviste a estar disponible.",
+          );
+        }
+      },
+    });
+
+    events.push({
       name: "ride_expired",
       handler: (data: any) => {
+        if (user?.role === "CHOFER") {
+          setRideRequests((prev) => prev.filter((r) => r.id !== data.rideId));
+        }
         if (pendingRideId && data.rideId === pendingRideId) {
           setPendingRideId(null);
           setElapsedSeconds(0);
@@ -183,6 +310,19 @@ export default function HomeScreen() {
     const s = (secs % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
+
+  // Calcula el rating promedio a partir del array ratingsReceived que llega del backend
+  const calcAvgRating = (ratingsReceived?: { score: number }[]) => {
+    if (!ratingsReceived || ratingsReceived.length === 0) return null;
+    const sum = ratingsReceived.reduce((acc, r) => acc + r.score, 0);
+    return (sum / ratingsReceived.length).toFixed(1);
+  };
+
+  const sortedOffers = [...offers].sort((a, b) =>
+    offerSort === "price"
+      ? a.quotedPrice - b.quotedPrice
+      : a.estimatedMinutes - b.estimatedMinutes,
+  );
 
   const handleFinishRide = () => {
     socketService.emit("finish_ride", { rideId: activeRide.id });
@@ -322,43 +462,94 @@ export default function HomeScreen() {
     });
   };
 
-  const renderActiveRideCard = () => (
-    <Card
-      style={[
-        styles.mainSurface,
+  const handleStartRide = () => {
+    socketService.emit("start_ride", { rideId: activeRide.id });
+  };
+
+  const handleCancelRide = () => {
+    Alert.alert(
+      "Cancelar viaje",
+      "¿Estás seguro que querés cancelar? El chofer ya fue confirmado.",
+      [
+        { text: "No, continuar", style: "cancel" },
         {
-          borderColor: colors.primary,
-          borderWidth: 2,
-          backgroundColor: colors.surface,
+          text: "Sí, cancelar",
+          style: "destructive",
+          onPress: () => {
+            socketService.emit("cancel_ride", { rideId: activeRide.id });
+            setActiveRide(null);
+            setPendingRideId(null);
+          },
         },
-      ]}
-    >
-      <Card.Title
-        title="Viaje Confirmado"
-        subtitle="El chofer está en camino"
-        titleStyle={{ color: colors.text }}
-        subtitleStyle={{ color: colors.text, opacity: 0.7 }}
-      />
-      <Card.Content>
-        <Text
-          variant="bodyLarge"
-          style={{ color: colors.text, fontWeight: "bold" }}
-        >
-          Vehículo:{" "}
-          {activeRide.selectedOffer?.driver?.driverDocument?.vehicleModel ||
-            "Transporte Habilitado"}
-        </Text>
-        <Text variant="bodyMedium" style={{ color: colors.text, opacity: 0.7 }}>
-          Patente:{" "}
-          {activeRide.selectedOffer?.driver?.driverDocument?.vehiclePlate ||
-            "N/A"}
-        </Text>
-        <Text variant="titleLarge" style={[styles.priceTag, { marginTop: 10 }]}>
-          Precio Total: ${activeRide.selectedOffer?.quotedPrice}
-        </Text>
-      </Card.Content>
-    </Card>
-  );
+      ],
+    );
+  };
+
+  // Card de viaje activo para el CLIENTE — diferencia MATCHED de IN_PROGRESS
+  const renderActiveRideCard = () => {
+    const isInProgress = activeRide?.status === "IN_PROGRESS";
+    const driverName =
+      activeRide.selectedOffer?.driver?.profile?.nombre || "Chofer";
+
+    return (
+      <Card
+        style={[
+          styles.mainSurface,
+          {
+            borderColor: isInProgress ? colors.secondary : colors.primary,
+            borderWidth: 2,
+            backgroundColor: colors.surface,
+          },
+        ]}
+      >
+        <Card.Title
+          title={isInProgress ? "Viaje en Curso" : "Viaje Confirmado"}
+          subtitle={
+            isInProgress
+              ? `${driverName} te recogió. ¡Buen viaje!`
+              : `${driverName} está en camino`
+          }
+          titleStyle={{ color: colors.text }}
+          subtitleStyle={{ color: colors.text, opacity: 0.7 }}
+        />
+        <Card.Content>
+          <Text
+            variant="bodyLarge"
+            style={{ color: colors.text, fontWeight: "bold" }}
+          >
+            Vehículo:{" "}
+            {activeRide.selectedOffer?.driver?.driverDocs?.vehicleModel ||
+              "Transporte Habilitado"}
+          </Text>
+          <Text
+            variant="bodyMedium"
+            style={{ color: colors.text, opacity: 0.7 }}
+          >
+            Patente:{" "}
+            {activeRide.selectedOffer?.driver?.driverDocs?.vehiclePlate ||
+              "N/A"}
+          </Text>
+          <Text
+            variant="titleLarge"
+            style={[styles.priceTag, { marginTop: 10 }]}
+          >
+            Precio Total: ${activeRide.selectedOffer?.quotedPrice}
+          </Text>
+          {/* Cancelar solo disponible mientras MATCHED y no IN_PROGRESS */}
+          {!isInProgress && (
+            <Button
+              mode="outlined"
+              onPress={handleCancelRide}
+              style={{ marginTop: 12, borderColor: "#EF4444" }}
+              textColor="#EF4444"
+            >
+              Cancelar Viaje
+            </Button>
+          )}
+        </Card.Content>
+      </Card>
+    );
+  };
 
   const renderClientView = () => (
     <View style={styles.viewContainer}>
@@ -481,45 +672,109 @@ export default function HomeScreen() {
 
           {offers.length > 0 && (
             <>
-              <Text variant="titleMedium" style={styles.sectionTitle}>
-                Ofertas Cercanas ({offers.length})
-              </Text>
-              {offers.map((offer: any) => (
-                <Surface key={offer.id} style={styles.offerCard} elevation={0}>
-                  <View style={styles.rideHeader}>
-                    <Text variant="titleMedium" style={{ color: "#FFFFFF" }}>
-                      {offer.driver?.profile?.nombre || "Chofer Disponible"}
+              {/* Header de ofertas con ordenamiento */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 4,
+                }}
+              >
+                <Text variant="titleMedium" style={styles.sectionTitle}>
+                  Ofertas ({offers.length})
+                </Text>
+                <View style={{ flexDirection: "row", gap: 6 }}>
+                  <Chip
+                    selected={offerSort === "price"}
+                    onPress={() => setOfferSort("price")}
+                    compact
+                    style={{
+                      backgroundColor:
+                        offerSort === "price" ? colors.primary : colors.divider,
+                    }}
+                    textStyle={{
+                      color: offerSort === "price" ? "#fff" : colors.text,
+                      fontSize: 11,
+                    }}
+                  >
+                    💰 Precio
+                  </Chip>
+                  <Chip
+                    selected={offerSort === "eta"}
+                    onPress={() => setOfferSort("eta")}
+                    compact
+                    style={{
+                      backgroundColor:
+                        offerSort === "eta" ? colors.primary : colors.divider,
+                    }}
+                    textStyle={{
+                      color: offerSort === "eta" ? "#fff" : colors.text,
+                      fontSize: 11,
+                    }}
+                  >
+                    ⏱ Tiempo
+                  </Chip>
+                </View>
+              </View>
+              {sortedOffers.map((offer: any) => {
+                const avgRating = calcAvgRating(offer.driver?.ratingsReceived);
+                const totalTrips = offer.driver?.ratingsReceived?.length ?? 0;
+                return (
+                  <Surface
+                    key={offer.id}
+                    style={styles.offerCard}
+                    elevation={0}
+                  >
+                    <View style={styles.rideHeader}>
+                      <View>
+                        <Text
+                          variant="titleMedium"
+                          style={{ color: "#FFFFFF" }}
+                        >
+                          {offer.driver?.profile?.nombre || "Chofer Disponible"}
+                        </Text>
+                        {/* Rating y viajes totales */}
+                        <Text
+                          variant="labelSmall"
+                          style={{ color: "#94A3B8", marginTop: 2 }}
+                        >
+                          {avgRating
+                            ? `⭐ ${avgRating} · ${totalTrips} viaje${totalTrips !== 1 ? "s" : ""}`
+                            : "Sin calificaciones aún"}
+                        </Text>
+                      </View>
+                      <Text variant="titleLarge" style={styles.priceTag}>
+                        ${offer.quotedPrice}
+                      </Text>
+                    </View>
+                    <Text variant="bodyMedium" style={{ color: "#94A3B8" }}>
+                      Llega en {offer.estimatedMinutes} mins
                     </Text>
-                    <Text variant="titleLarge" style={styles.priceTag}>
-                      ${offer.quotedPrice}
-                    </Text>
-                  </View>
-                  <Text variant="bodyMedium" style={{ color: "#94A3B8" }}>
-                    Llega en {offer.estimatedMinutes} mins
-                  </Text>
-                  <View style={styles.offerActions}>
-                    <Button
-                      mode="text"
-                      onPress={() => {
-                        setSelectedOffer(offer);
-                        setSelectedRide(null);
-                        setDetailsDialogVisible(true);
-                        loadUserRatings(offer.driverId);
-                      }}
-                      labelStyle={{ color: "#94A3B8" }}
-                    >
-                      DETALLES
-                    </Button>
-                    <Button
-                      mode="contained"
-                      onPress={() => handleAcceptOffer(offer)}
-                      buttonColor="#2563EB"
-                    >
-                      ACEPTAR
-                    </Button>
-                  </View>
-                </Surface>
-              ))}
+                    <View style={styles.offerActions}>
+                      <Button
+                        mode="text"
+                        onPress={() => {
+                          setSelectedOffer(offer);
+                          setSelectedRide(null);
+                          setDetailsDialogVisible(true);
+                          loadUserRatings(offer.driverId);
+                        }}
+                        labelStyle={{ color: "#94A3B8" }}
+                      >
+                        DETALLES
+                      </Button>
+                      <Button
+                        mode="contained"
+                        onPress={() => handleAcceptOffer(offer)}
+                        buttonColor="#2563EB"
+                      >
+                        ACEPTAR
+                      </Button>
+                    </View>
+                  </Surface>
+                );
+              })}
             </>
           )}
         </>
@@ -588,6 +843,25 @@ export default function HomeScreen() {
           <Text variant="titleMedium" style={styles.surfaceTitle}>
             Viaje Activo
           </Text>
+          <Text
+            variant="labelSmall"
+            style={{
+              color:
+                activeRide?.status === "IN_PROGRESS"
+                  ? colors.secondary
+                  : activeRide?.status === "AT_LOCATION"
+                    ? "#F59E0B"
+                    : colors.primary,
+              fontWeight: "bold",
+              marginBottom: 8,
+            }}
+          >
+            {activeRide?.status === "IN_PROGRESS"
+              ? "● EN TRAYECTO"
+              : activeRide?.status === "AT_LOCATION"
+                ? "● EN EL LUGAR"
+                : "● EN CAMINO"}
+          </Text>
           <Text variant="bodyLarge" style={{ color: "#FFFFFF" }}>
             Cliente:{" "}
             {activeRide.client?.profile?.nombre ||
@@ -608,16 +882,79 @@ export default function HomeScreen() {
               Info: {activeRide.detalle}
             </Text>
           )}
-          <Button
-            mode="contained"
-            style={{ marginTop: 20 }}
-            onPress={handleFinishRide}
-            buttonColor={colors.secondary}
-            contentStyle={{ height: 50 }}
-            textColor="white"
-          >
-            FINALIZAR VIAJE
-          </Button>
+          {/* Botones adaptativos según estado del viaje */}
+          {activeRide?.status === "IN_PROGRESS" ? (
+            // En trayecto: solo finalizar
+            <Button
+              mode="contained"
+              style={{ marginTop: 20 }}
+              onPress={handleFinishRide}
+              buttonColor={colors.secondary}
+              contentStyle={{ height: 50 }}
+              textColor="white"
+            >
+              FINALIZAR VIAJE
+            </Button>
+          ) : activeRide?.status === "AT_LOCATION" ? (
+            // En el lugar: bocina + iniciar viaje
+            <View style={{ gap: 10, marginTop: 20 }}>
+              <Button
+                mode="outlined"
+                onPress={() => {
+                  socketService.emit("horn_beep", {
+                    rideId: activeRide?.id,
+                  });
+                }}
+                style={{ borderColor: "#F59E0B" }}
+                textColor="#F59E0B"
+                icon="bullhorn"
+                contentStyle={{ height: 44 }}
+              >
+                🔔 BOCINA
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleStartRide}
+                buttonColor={colors.primary}
+                contentStyle={{ height: 50 }}
+                textColor="white"
+              >
+                INICIAR VIAJE
+              </Button>
+            </View>
+          ) : (
+            // En camino (MATCHED): llegué + bocina
+            <View style={{ gap: 10, marginTop: 20 }}>
+              <Button
+                mode="outlined"
+                onPress={() => {
+                  socketService.emit("horn_beep", {
+                    rideId: activeRide?.id,
+                  });
+                }}
+                style={{ borderColor: "#64748B" }}
+                textColor="#94A3B8"
+                icon="bullhorn"
+                contentStyle={{ height: 44 }}
+              >
+                🔔 BOCINA
+              </Button>
+              <Button
+                mode="contained"
+                onPress={() => {
+                  socketService.emit("driver_arrived", {
+                    rideId: activeRide?.id,
+                  });
+                }}
+                buttonColor="#F59E0B"
+                contentStyle={{ height: 50 }}
+                textColor="white"
+                icon="map-marker-check"
+              >
+                LLEGUÉ AL PUNTO
+              </Button>
+            </View>
+          )}
         </Surface>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -643,12 +980,28 @@ export default function HomeScreen() {
                 >
                   {req.client?.profile?.nombre || req.guestName || "Invitado"}
                 </Chip>
-                <Text
-                  variant="titleSmall"
-                  style={{ color: colors.secondary, fontWeight: "bold" }}
-                >
-                  NUEVO
-                </Text>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text
+                    variant="titleSmall"
+                    style={{
+                      color: colors.secondary,
+                      fontWeight: "bold",
+                      marginBottom: 4,
+                    }}
+                  >
+                    NUEVO
+                  </Text>
+                  {req.createdAt && (
+                    <RideTimerDisplay
+                      createdAt={req.createdAt}
+                      onExpire={() =>
+                        setRideRequests((prev) =>
+                          prev.filter((r) => r.id !== req.id),
+                        )
+                      }
+                    />
+                  )}
+                </View>
               </View>
               <List.Item
                 title={req.originAddress}

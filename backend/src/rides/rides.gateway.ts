@@ -6,6 +6,7 @@ import {
   WebSocketServer,
   OnGatewayConnection,
 } from '@nestjs/websockets';
+import { WsException } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { RidesService } from './rides.service';
 import { UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
@@ -102,13 +103,28 @@ export class RidesGateway implements OnGatewayConnection {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      // TODO: Verificar que el rideId pertenezca al usuario que acepta (si es cliente)
+      const user = client.data.user;
+
+      // Verificación de ownership: solo el dueño del viaje puede aceptar una oferta
+      const rideOwner = await this.ridesService.getRideOwner(data.rideId);
+      if (rideOwner !== null && rideOwner !== user?.id) {
+        throw new WsException('No tenés permiso para aceptar esta oferta');
+      }
+
       const ride = await this.ridesService.acceptOffer(
         data.rideId,
         data.offerId,
       );
       this.server.emit('offer_accepted', ride);
       this.server.to(`ride_${data.rideId}`).emit('ride_matched', ride);
+
+      // Auto-emitir: el chofer queda "en camino" inmediatamente al aceptarse la oferta
+      const driverName =
+        ride.selectedOffer?.driver?.profile?.nombre ?? 'Tu chofer';
+      this.server
+        .to(`ride_${data.rideId}`)
+        .emit('driver_en_camino', { ride, driverName });
+
       return ride;
     } catch (error) {
       console.error('Error in accept_offer:', error);
@@ -145,6 +161,42 @@ export class RidesGateway implements OnGatewayConnection {
   }
 
   @UseGuards(WsJwtGuard)
+  @SubscribeMessage('start_ride')
+  async handleStartRide(
+    @MessageBody() data: { rideId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const ride = await this.ridesService.startRide(data.rideId);
+      // Notificar al cliente que el chofer ya lo recogió
+      this.server.to(`ride_${data.rideId}`).emit('ride_started', ride);
+      return ride;
+    } catch (error) {
+      console.error('Error in start_ride:', error);
+      throw error;
+    }
+  }
+
+  @UseGuards(WsJwtGuard)
+  @SubscribeMessage('cancel_ride')
+  async handleCancelRide(
+    @MessageBody() data: { rideId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const user = client.data.user;
+      const ride = await this.ridesService.cancelRide(data.rideId, user.id);
+      // Notificar al chofer que cancelaron
+      this.server.to(`ride_${data.rideId}`).emit('ride_cancelled', ride);
+      this.server.emit('ride_cancelled_global', { rideId: data.rideId });
+      return ride;
+    } catch (error) {
+      console.error('Error in cancel_ride:', error);
+      throw error;
+    }
+  }
+
+  @UseGuards(WsJwtGuard)
   @UsePipes(new ValidationPipe())
   @SubscribeMessage('rate_ride')
   async handleRateRide(
@@ -167,6 +219,48 @@ export class RidesGateway implements OnGatewayConnection {
   ) {
     const user = client.data.user;
     return this.ridesService.getRatingsForUser(data.targetUserId, user.role);
+  }
+
+  @UseGuards(WsJwtGuard)
+  @SubscribeMessage('driver_arrived')
+  async handleDriverArrived(
+    @MessageBody() data: { rideId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const ride = await this.ridesService.markAtLocation(data.rideId);
+      // Notificar al cliente que el chofer ya está en el lugar
+      this.server
+        .to(`ride_${data.rideId}`)
+        .emit('driver_at_location', { ride });
+      return ride;
+    } catch (error) {
+      console.error('Error in driver_arrived:', error);
+      throw error;
+    }
+  }
+
+  @UseGuards(WsJwtGuard)
+  @SubscribeMessage('horn_beep')
+  async handleHornBeep(
+    @MessageBody() data: { rideId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const user = client.data.user;
+    const driverName = user?.profile?.nombre ?? 'Tu chofer';
+
+    // Emitir alerta de bocina al cliente en la room del viaje
+    // (El cliente escucha 'horn_beep' y muestra un Alert)
+    this.server.to(`ride_${data.rideId}`).emit('horn_beep', {
+      rideId: data.rideId,
+      driverName,
+      timestamp: new Date().toISOString(),
+    });
+
+    // TODO (notificaciones): cuando Expo Push esté configurado,
+    // llamar a notificationsService.notifyHorn(clientPushToken, driverName)
+
+    return { success: true };
   }
 
   @SubscribeMessage('expire_ride')

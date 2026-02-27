@@ -49,14 +49,4 @@ export class UsersController {
   async getMyDriverDocuments(@Request() req) {
     return this.usersService.getDriverDocuments(req.user.id);
   }
-
-  @Post('driver/:driverId/verify')
-  @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
-  async verifyDriver(
-    @Param('driverId') driverId: string,
-    @Body('isVerified') isVerified: boolean,
-  ) {
-    return this.usersService.verifyDriver(driverId, isVerified);
-  }
 }

@@ -49,7 +49,7 @@ model DriverDocument {
 
   licenciaUrl     String?   @unique  // Nº licencia único por chofer
   cedulaUrl       String?   @unique  // Nº cédula único por vehículo
-  habilitacionUrl String?
+  habilitacionUrl String?   @unique  // Nº habilitación municipal única
   maxPassengers   Int?
   isVerified      Boolean   @default(false)
   verifiedAt      DateTime?
@@ -136,7 +136,9 @@ enum Role {
 
 enum RideStatus {
   PENDING
-  MATCHED
+  MATCHED       // Oferta aceptada — chofer en camino
+  AT_LOCATION   // Chofer llegó al punto de encuentro
+  IN_PROGRESS   // Pasajero a bordo — viaje iniciado
   COMPLETED
   CANCELLED
   EXPIRED

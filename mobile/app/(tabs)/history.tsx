@@ -19,11 +19,19 @@ import { useAppTheme } from "../../context/ThemeContext";
 import { ridesService, RideHistoryItem } from "../../services/rides.service";
 
 type FilterStatus = "TODOS" | "COMPLETED" | "CANCELLED";
+type FilterPeriod = "TODO" | "HOY" | "SEMANA" | "MES";
 
 const FILTER_LABELS: Record<FilterStatus, string> = {
   TODOS: "Todos",
   COMPLETED: "Completados",
   CANCELLED: "Cancelados",
+};
+
+const PERIOD_LABELS: Record<FilterPeriod, string> = {
+  TODO: "Siempre",
+  HOY: "Hoy",
+  SEMANA: "Esta semana",
+  MES: "Este mes",
 };
 
 function StarRating({ score }: { score: number }) {
@@ -164,6 +172,7 @@ export default function HistoryScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterStatus>("TODOS");
+  const [period, setPeriod] = useState<FilterPeriod>("TODO");
   const [error, setError] = useState<string | null>(null);
 
   const fetchHistory = useCallback(async (isRefresh = false) => {
@@ -189,8 +198,33 @@ export default function HistoryScreen() {
     }, [fetchHistory]),
   );
 
-  const filteredRides =
-    filter === "TODOS" ? rides : rides.filter((r) => r.status === filter);
+  const filterByPeriod = (ride: RideHistoryItem): boolean => {
+    if (period === "TODO") return true;
+    const now = new Date();
+    const d = new Date(ride.createdAt);
+    if (period === "HOY") {
+      return (
+        d.getDate() === now.getDate() &&
+        d.getMonth() === now.getMonth() &&
+        d.getFullYear() === now.getFullYear()
+      );
+    }
+    if (period === "SEMANA") {
+      const weekAgo = new Date(now);
+      weekAgo.setDate(now.getDate() - 7);
+      return d >= weekAgo;
+    }
+    if (period === "MES") {
+      return (
+        d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      );
+    }
+    return true;
+  };
+
+  const filteredRides = rides
+    .filter((r) => filter === "TODOS" || r.status === filter)
+    .filter(filterByPeriod);
 
   const role = user?.role ?? "CLIENTE";
   const title = role === "CLIENTE" ? "Mis Viajes" : "Viajes Realizados";
@@ -199,7 +233,7 @@ export default function HistoryScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="light-content" />
 
-      {/* Filtros */}
+      {/* Filtros de estado */}
       <View style={styles.filters}>
         {(Object.keys(FILTER_LABELS) as FilterStatus[]).map((f) => (
           <Chip
@@ -218,6 +252,29 @@ export default function HistoryScreen() {
             }}
           >
             {FILTER_LABELS[f]}
+          </Chip>
+        ))}
+      </View>
+      {/* Filtros de período */}
+      <View style={[styles.filters, { paddingTop: 0 }]}>
+        {(Object.keys(PERIOD_LABELS) as FilterPeriod[]).map((p) => (
+          <Chip
+            key={p}
+            selected={period === p}
+            onPress={() => setPeriod(p)}
+            style={[
+              styles.chip,
+              {
+                backgroundColor:
+                  period === p ? colors.secondary : colors.surface,
+              },
+            ]}
+            textStyle={{
+              color: period === p ? "#FFFFFF" : colors.text,
+              fontSize: 12,
+            }}
+          >
+            {PERIOD_LABELS[p]}
           </Chip>
         ))}
       </View>
