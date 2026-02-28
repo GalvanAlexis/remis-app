@@ -13,6 +13,8 @@ import {
   useAppTheme,
   getPaperTheme,
 } from "../context/ThemeContext";
+import { ToastProvider } from "../context/ToastContext";
+import { AppToast } from "../components/AppToast";
 import { StatusBar } from "expo-status-bar";
 
 // Prevent splash screen from auto-hiding
@@ -133,7 +135,9 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ThemeProvider>
           <AuthProvider>
-            <ThemeWrapper />
+            <ToastProvider>
+              <ThemeWrapper />
+            </ToastProvider>
           </AuthProvider>
         </ThemeProvider>
       </SafeAreaProvider>
@@ -149,6 +153,8 @@ function ThemeWrapper() {
     <PaperProvider theme={paperTheme}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <RootLayoutNav />
+      {/* Toast overlay global — encima de todo */}
+      <AppToast />
     </PaperProvider>
   );
 }

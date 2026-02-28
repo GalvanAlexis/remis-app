@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import * as SecureStore from "expo-secure-store";
+import { appEvents, APP_EVENTS } from "../utils/events";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -86,10 +87,13 @@ api.interceptors.response.use(
   },
 );
 
-async function clearSession() {
+async function clearSession(notify = true) {
   await SecureStore.deleteItemAsync("token");
   await SecureStore.deleteItemAsync("refresh_token");
   await SecureStore.deleteItemAsync("user_id");
+  if (notify) {
+    appEvents.emit(APP_EVENTS.SESSION_EXPIRED);
+  }
 }
 
 export default api;

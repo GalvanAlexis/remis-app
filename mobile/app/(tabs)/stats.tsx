@@ -1,11 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  View,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import { View, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
 import {
   Text,
   Surface,
@@ -16,6 +10,7 @@ import {
 } from "react-native-paper";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../hooks/useAuth";
+import { useToast } from "../../context/ToastContext";
 import api from "../../services/api";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
@@ -200,6 +195,7 @@ const HourHeatmap = ({ data, colors }: { data: HourSlot[]; colors: any }) => {
 export default function StatsScreen() {
   const { colors } = useAppTheme();
   const { user } = useAuth();
+  const { showError, showInfo } = useToast();
   const [tab, setTab] = useState<"free" | "premium">("free");
   const [freeData, setFreeData] = useState<FreeStats | null>(null);
   const [premiumData, setPremiumData] = useState<PremiumStats | null>(null);
@@ -214,7 +210,7 @@ export default function StatsScreen() {
       const res = await api.get<FreeStats>("/stats/free");
       setFreeData(res.data);
     } catch {
-      Alert.alert("Error", "No se pudieron cargar las estadísticas.");
+      showError("Error", "No se pudieron cargar las estadísticas.");
     } finally {
       setLoadingFree(false);
     }
@@ -229,8 +225,12 @@ export default function StatsScreen() {
     } catch (err: any) {
       if (err?.status === 403 || err?.response?.status === 403) {
         setPremiumBlocked(true);
+        showInfo(
+          "Función Premium 👑",
+          "Activá Premium para ver analytics avanzados.",
+        );
       } else {
-        Alert.alert("Error", "No se pudo cargar el analytics premium.");
+        showError("Error", "No se pudo cargar el analytics premium.");
       }
     } finally {
       setLoadingPremium(false);
@@ -406,9 +406,9 @@ export default function StatsScreen() {
                   contentStyle={{ height: 50 }}
                   icon="crown"
                   onPress={() =>
-                    Alert.alert(
-                      "Próximamente",
-                      "La suscripción premium estará disponible en la próxima actualización.",
+                    showInfo(
+                      "Próximamente 🚀",
+                      "La suscripción Premium estará disponible en la próxima actualización.",
                     )
                   }
                 >

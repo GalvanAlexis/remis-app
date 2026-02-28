@@ -1,11 +1,11 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { Alert } from "react-native";
 import {
   authService,
   UserProfile,
   LoginDto,
   RegisterDto,
 } from "../services/auth.service";
+import { useToast } from "../context/ToastContext";
 
 interface AuthContextData {
   user: UserProfile | null;
@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(profile);
       }
     } catch (error) {
-      // Silencioso: si falla el checkeo es porque el token expiro o no hay sesion local.
+      // Si falla el checkeo, la sesión es inválida — limpiar silenciosamente
       await authService.logout();
     } finally {
       setIsLoading(false);
@@ -51,12 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(profile);
     } catch (error: any) {
       console.error("Login failed:", error);
-      Alert.alert(
-        "Error de Inicio de Sesión",
-        error.response?.data?.message ||
-          "Credenciales inválidas o error de servidor",
-      );
-      throw error;
+      throw error; // El screen de login maneja el toast
     }
   };
 
@@ -67,11 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(profile);
     } catch (error: any) {
       console.error("Registration failed:", error);
-      Alert.alert(
-        "Error de Registro",
-        error.response?.data?.message || "Ocurrió un error inesperado (500)",
-      );
-      throw error;
+      throw error; // El screen de register maneja el toast
     }
   };
 

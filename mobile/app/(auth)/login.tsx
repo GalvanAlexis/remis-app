@@ -5,13 +5,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, TextInput, Button, Surface } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../hooks/useAuth";
 import { useAppTheme } from "../../context/ThemeContext";
+import { useToast } from "../../context/ToastContext";
 
 export default function LoginScreen() {
   const { colors, isDark } = useAppTheme();
@@ -19,11 +19,15 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { showError, showWarning } = useToast();
   const router = useRouter();
 
   const handleLogin = async () => {
     if (!username || !password) {
-      Alert.alert("Error", "Por favor complete todos los campos");
+      showWarning(
+        "Campos incompletos",
+        "Por favor completá usuario y contraseña.",
+      );
       return;
     }
 
@@ -31,10 +35,10 @@ export default function LoginScreen() {
     try {
       await login({ username, password });
     } catch (error: any) {
-      Alert.alert(
-        "Error",
-        error.response?.data?.message || "Credenciales inválidas",
-      );
+      const msg =
+        error.response?.data?.message ??
+        "Credenciales incorrectas. Verificá tu usuario y contraseña.";
+      showError("No pudimos iniciar sesión", msg);
     } finally {
       setLoading(false);
     }
