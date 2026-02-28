@@ -26,6 +26,7 @@ import { socketService } from "../../services/socket.service";
 import { ridesService } from "../../services/rides.service";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useSocket } from "../../hooks/useSocket";
+import { useToast } from "../../context/ToastContext";
 
 const EXPIRE_SECONDS_GLOBAL = 3600;
 
@@ -89,6 +90,7 @@ const RideTimerDisplay = ({
 export default function HomeScreen() {
   const { theme, colors, isDark } = useAppTheme();
   const { user, isAuthenticated } = useAuth();
+  const { showSuccess, showInfo, showWarning, showError } = useToast();
   const router = useRouter();
 
   // Navigation / Workflow States
@@ -140,9 +142,9 @@ export default function HomeScreen() {
       events.push({
         name: "offer_accepted",
         handler: (ride: any) => {
-          Alert.alert(
-            "¡Éxito!",
-            "Tu oferta ha sido aceptada. Dirígete al origen.",
+          showSuccess(
+            "¡Oferta aceptada! 🎉",
+            "Dirígete al punto de origen del cliente.",
           );
           setIsOnline(false);
           setActiveRide(ride);
@@ -159,14 +161,14 @@ export default function HomeScreen() {
         handler: (ride: any) => {
           setActiveRide(ride);
           setOffers([]);
-          Alert.alert("Viaje Confirmado", "El chofer está en camino.");
+          showSuccess("Viaje Confirmado 🚗", "El chofer está en camino.");
         },
       });
       events.push({
         name: "ride_started",
         handler: (ride: any) => {
           setActiveRide(ride);
-          Alert.alert("En camino", "El chofer ya te recogió. ¡Buen viaje!");
+          showInfo("En camino 🚗", "El chofer ya te recogió. ¡Buen viaje!");
         },
       });
       events.push({
@@ -180,9 +182,9 @@ export default function HomeScreen() {
         name: "ride_cancelled",
         handler: () => {
           setActiveRide(null);
-          Alert.alert(
+          showWarning(
             "Viaje Cancelado",
-            "El viaje fue cancelado. Pods pedir otro en cualquier momento.",
+            "El viaje fue cancelado. Podés pedir otro en cualquier momento.",
           );
         },
       });
@@ -191,9 +193,9 @@ export default function HomeScreen() {
         name: "driver_en_camino",
         handler: ({ ride, driverName }: any) => {
           setActiveRide(ride);
-          Alert.alert(
-            "\uD83D\uDE97 \u00A1Tu chofer est\u00E1 en camino!",
-            `${driverName} ya va para all\u00E1. Prep\u00E1rate en el punto de encuentro.`,
+          showSuccess(
+            "🚗 ¡Tu chofer está en camino!",
+            `${driverName} ya va para allá. Prepárate en el punto de encuentro.`,
           );
         },
       });
@@ -202,9 +204,9 @@ export default function HomeScreen() {
         name: "driver_at_location",
         handler: ({ ride }: any) => {
           setActiveRide(ride);
-          Alert.alert(
-            "\uD83D\uDCCD \u00A1Tu remis lleg\u00F3!",
-            "El chofer te est\u00E1 esperando en el punto de encuentro.",
+          showSuccess(
+            "📍 ¡Tu remis llegó!",
+            "El chofer te está esperando en el punto de encuentro.",
           );
         },
       });
@@ -212,10 +214,9 @@ export default function HomeScreen() {
       events.push({
         name: "horn_beep",
         handler: ({ driverName }: any) => {
-          Alert.alert(
-            "\uD83D\uDCE3 \u00A1Beep beep!",
-            `${driverName} te est\u00E1 avisando. \u00A1Ya baj\u00E1!`,
-            [{ text: "\u00A1Ya voy!" }],
+          showInfo(
+            "📣 ¡Beep beep!",
+            `${driverName} te está avisando. ¡Ya bajá!`,
           );
         },
       });
@@ -235,10 +236,10 @@ export default function HomeScreen() {
       handler: (data: any) => {
         if (user?.role === "CHOFER" && activeRide?.id === data.rideId) {
           setActiveRide(null);
-          setIsOnline(true); // El chofer vuelve a estar disponible automáticamente
-          Alert.alert(
+          setIsOnline(true);
+          showWarning(
             "Viaje Cancelado",
-            "El cliente canceló el viaje. Volviste a estar disponible.",
+            "El cliente canceló el viaje. Volvíste a estar disponible.",
           );
         }
       },
@@ -253,7 +254,7 @@ export default function HomeScreen() {
         if (pendingRideId && data.rideId === pendingRideId) {
           setPendingRideId(null);
           setElapsedSeconds(0);
-          Alert.alert(
+          showWarning(
             "⏰ Pedido Expirado",
             "Tu solicitud de remis expiró después de 1 hora sin respuesta.",
           );
@@ -352,17 +353,17 @@ export default function HomeScreen() {
     setActiveRide(null);
     setRatingScore(5);
     setRatingComment("");
-    Alert.alert("¡Gracias!", "Tu calificación ha sido enviada.");
+    showSuccess("¡Gracias! ⭐", "Tu calificación fue enviada correctamente.");
   };
 
   const handleRequestRide = async () => {
     if (!origin || !destination) {
-      Alert.alert("Error", "Por favor ingresa origen y destino");
+      showWarning("Campos incompletos", "Por favor ingresá origen y destino.");
       return;
     }
 
     if (!isConnected) {
-      Alert.alert(
+      showError(
         "Sin conexión",
         "No hay conexión con el servidor. Intentá de nuevo en unos segundos.",
       );
@@ -382,23 +383,23 @@ export default function HomeScreen() {
     try {
       const result = await socketService.request("request_ride", data);
       if (result) {
-        setPendingRideId(result.id); // Arrancar el timer
+        setPendingRideId(result.id);
         setElapsedSeconds(0);
         setOrigin("");
         setDestination("");
         setDetalle("");
-        Alert.alert(
+        showSuccess(
           "✅ Solicitado",
           "Tu pedido fue enviado. Esperando ofertas de choferes...",
         );
       } else {
-        Alert.alert(
+        showError(
           "Error",
           "No se pudo enviar el pedido. Verificá tu conexión.",
         );
       }
     } catch (e) {
-      Alert.alert("Error", "Ocurrió un error al enviar el pedido.");
+      showError("Error", "Ocurrió un error al enviar el pedido.");
     } finally {
       setIsRequesting(false);
     }
@@ -406,7 +407,10 @@ export default function HomeScreen() {
 
   const handleSendOffer = () => {
     if (!offerForm.price || !offerForm.eta) {
-      Alert.alert("Error", "Completa precio y tiempo");
+      showWarning(
+        "Campos incompletos",
+        "Por favor completá precio y tiempo estimado.",
+      );
       return;
     }
 
@@ -419,7 +423,7 @@ export default function HomeScreen() {
 
     setOfferDialogVisible(false);
     setOfferForm({ price: "", eta: "10" });
-    Alert.alert("Oferta Enviada", "Esperando respuesta del cliente.");
+    showSuccess("Oferta Enviada 👌", "Esperando respuesta del cliente.");
   };
 
   const handleAcceptOffer = (offer: any) => {
