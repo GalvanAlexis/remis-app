@@ -63,6 +63,10 @@ model DriverDocument {
   vehiclePlate    String?   @unique  // Patente única por vehículo
   vehicleColor    String?
 
+  // Suscripción Premium
+  isPremium       Boolean   @default(false)
+  premiumUntil    DateTime? // null = sin vencimiento (manual). Futuro: MercadoPago
+
   @@map("driver_documents")
 }
 
