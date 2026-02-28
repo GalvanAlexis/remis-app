@@ -63,12 +63,22 @@ export const authService = {
   async login(data: LoginDto): Promise<AuthResponse> {
     const response = await api.post("/auth/login", data);
     await SecureStore.setItemAsync("token", response.data.access_token);
+    await SecureStore.setItemAsync(
+      "refresh_token",
+      response.data.refresh_token,
+    );
+    await SecureStore.setItemAsync("user_id", response.data.user.id);
     return response.data;
   },
 
   async register(data: RegisterDto): Promise<AuthResponse> {
     const response = await api.post("/auth/register", data);
     await SecureStore.setItemAsync("token", response.data.access_token);
+    await SecureStore.setItemAsync(
+      "refresh_token",
+      response.data.refresh_token,
+    );
+    await SecureStore.setItemAsync("user_id", response.data.user.id);
     return response.data;
   },
 
@@ -78,10 +88,37 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    await SecureStore.deleteItemAsync("token");
+    try {
+      // Invalida el refresh token en el servidor
+      await api.post("/auth/logout");
+    } catch {
+      // Si falla (token ya expirado), continuamos igual — se borra el storage local
+    } finally {
+      await SecureStore.deleteItemAsync("token");
+      await SecureStore.deleteItemAsync("refresh_token");
+      await SecureStore.deleteItemAsync("user_id");
+    }
   },
 
   async getToken(): Promise<string | null> {
     return await SecureStore.getItemAsync("token");
+  },
+
+  async getRefreshToken(): Promise<string | null> {
+    return await SecureStore.getItemAsync("refresh_token");
+  },
+
+  async getUserId(): Promise<string | null> {
+    return await SecureStore.getItemAsync("user_id");
+  },
+
+  async saveNewTokens(
+    accessToken: string,
+    refreshToken: string,
+    userId: string,
+  ): Promise<void> {
+    await SecureStore.setItemAsync("token", accessToken);
+    await SecureStore.setItemAsync("refresh_token", refreshToken);
+    await SecureStore.setItemAsync("user_id", userId);
   },
 };

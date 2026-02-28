@@ -5,6 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto, LoginDto, AuthResponseDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
@@ -15,6 +16,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
@@ -218,18 +220,88 @@ export class AuthService {
 
   private async generateTokens(userId: string, username: string, role: Role) {
     const payload = { sub: userId, username, role };
+    const refreshSecret =
+      this.configService.get<string>('JWT_REFRESH_SECRET') ||
+      this.configService.get<string>('JWT_SECRET') + '_refresh';
 
     const [access_token, refresh_token] = await Promise.all([
       this.jwtService.signAsync(payload),
       this.jwtService.signAsync(payload, {
+        secret: refreshSecret,
         expiresIn: '7d',
       }),
     ]);
 
+    // Persistir el hash del refresh token en BD
+    await this.saveRefreshToken(userId, refresh_token);
+
+    return { access_token, refresh_token };
+  }
+
+  /** Guarda el hash bcrypt del refresh token en el User */
+  private async saveRefreshToken(
+    userId: string,
+    refreshToken: string,
+  ): Promise<void> {
+    const hash = await bcrypt.hash(refreshToken, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshTokenHash: hash },
+    });
+  }
+
+  /**
+   * Renueva el access_token usando un refresh_token válido.
+   * Retorna un nuevo par access + refresh (rotation).
+   */
+  async refresh(
+    userId: string,
+    refreshToken: string,
+  ): Promise<AuthResponseDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    });
+
+    if (!user || !user.refreshTokenHash) {
+      throw new UnauthorizedException('Sesión inválida o expirada');
+    }
+
+    const isValid = await bcrypt.compare(refreshToken, user.refreshTokenHash);
+    if (!isValid) {
+      throw new UnauthorizedException('Refresh token inválido');
+    }
+
+    // Token rotation — el nuevo par reemplaza el anterior en BD
+    const tokens = await this.generateTokens(user.id, user.username, user.role);
+
     return {
-      access_token,
-      refresh_token,
+      ...tokens,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        profile: user.profile
+          ? {
+              nombre: user.profile.nombre,
+              apellido: user.profile.apellido,
+              themePreference: user.profile.themePreference,
+            }
+          : undefined,
+      },
     };
+  }
+
+  /**
+   * Invalida el refresh token en BD.
+   * El access_token sigue siendo válido hasta que expire (15m).
+   */
+  async logout(userId: string): Promise<{ message: string }> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshTokenHash: null },
+    });
+    return { message: 'Sesión cerrada correctamente' };
   }
 
   async validateUser(userId: string) {

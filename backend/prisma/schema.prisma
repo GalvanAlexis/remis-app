@@ -17,6 +17,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Refresh token hasheado (bcrypt). null = sin sesión activa.
+  // Se setea en login/register y se borra en logout.
+  refreshTokenHash String?
+
   profile          Profile?
   driverDocs       DriverDocument?
   ridesAsClient    RideRequest[]   @relation("ClientRides")
