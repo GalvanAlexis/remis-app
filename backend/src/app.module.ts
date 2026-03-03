@@ -9,6 +9,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { RidesModule } from './rides/rides.module';
 import { StatsModule } from './stats/stats.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { StatsModule } from './stats/stats.module';
     UsersModule,
     RidesModule,
     StatsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

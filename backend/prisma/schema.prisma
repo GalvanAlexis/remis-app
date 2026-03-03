@@ -43,6 +43,10 @@ model Profile {
   profilePictureUrl String?
   themePreference   String  @default("EXECUTIVE")
 
+  // Expo Push Token — se actualiza en cada login/inicio de app
+  // Null si el usuario no otorgó permisos de notificación
+  pushToken         String?
+
   @@map("profiles")
 }
 

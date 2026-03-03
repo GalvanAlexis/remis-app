@@ -16,6 +16,14 @@ import {
 import { ToastProvider } from "../context/ToastContext";
 import { AppToast } from "../components/AppToast";
 import { StatusBar } from "expo-status-bar";
+import {
+  registerForPushNotificationsAsync,
+  registerPushTokenOnServer,
+  setupNotificationHandler,
+} from "../services/notifications.service";
+
+// Configurar handler de notificaciones en foreground (muestra alert + sonido)
+setupNotificationHandler();
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -118,6 +126,18 @@ function RootLayoutNav() {
       router.replace("/(tabs)");
     }
   }, [isAuthenticated, isAuthLoading, segments, fontsLoaded]);
+
+  // Registrar push token cuando el usuario se autentica
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    // Fire-and-forget: no bloquea el flujo si falla
+    void (async () => {
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        await registerPushTokenOnServer(token);
+      }
+    })();
+  }, [isAuthenticated]);
 
   if (!fontsLoaded) return null;
 

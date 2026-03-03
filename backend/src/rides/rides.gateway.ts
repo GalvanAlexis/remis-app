@@ -18,6 +18,7 @@ import {
   UpdateDriverStatusDto,
   RatingDto,
 } from './dto/rides.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @WebSocketGateway({
   cors: {
@@ -31,7 +32,10 @@ export class RidesGateway implements OnGatewayConnection {
   @WebSocketServer()
   server: Server;
 
-  constructor(private ridesService: RidesService) {}
+  constructor(
+    private ridesService: RidesService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
@@ -125,6 +129,12 @@ export class RidesGateway implements OnGatewayConnection {
         .to(`ride_${data.rideId}`)
         .emit('driver_en_camino', { ride, driverName });
 
+      // PUSH: notificar al cliente que el chofer está en camino
+      void this.notificationsService.notifyDriverEnRoute(
+        ride.clientId,
+        driverName,
+      );
+
       return ride;
     } catch (error) {
       console.error('Error in accept_offer:', error);
@@ -189,6 +199,18 @@ export class RidesGateway implements OnGatewayConnection {
       // Notificar al chofer que cancelaron
       this.server.to(`ride_${data.rideId}`).emit('ride_cancelled', ride);
       this.server.emit('ride_cancelled_global', { rideId: data.rideId });
+
+      // PUSH: notificar al chofer asignado que el cliente canceló
+      const driverId = ride.selectedOffer?.driverId ?? null;
+      const clientName =
+        user?.profile?.nombre ?? user?.username ?? 'El cliente';
+      if (driverId) {
+        void this.notificationsService.notifyRideCancelled(
+          driverId,
+          clientName,
+        );
+      }
+
       return ride;
     } catch (error) {
       console.error('Error in cancel_ride:', error);
@@ -233,6 +255,15 @@ export class RidesGateway implements OnGatewayConnection {
       this.server
         .to(`ride_${data.rideId}`)
         .emit('driver_at_location', { ride });
+
+      // PUSH: notificar al cliente que el remis llegó
+      const driverName =
+        ride.selectedOffer?.driver?.profile?.nombre ?? 'Tu chofer';
+      void this.notificationsService.notifyDriverArrived(
+        ride.clientId,
+        driverName,
+      );
+
       return ride;
     } catch (error) {
       console.error('Error in driver_arrived:', error);
@@ -250,15 +281,17 @@ export class RidesGateway implements OnGatewayConnection {
     const driverName = user?.profile?.nombre ?? 'Tu chofer';
 
     // Emitir alerta de bocina al cliente en la room del viaje
-    // (El cliente escucha 'horn_beep' y muestra un Alert)
     this.server.to(`ride_${data.rideId}`).emit('horn_beep', {
       rideId: data.rideId,
       driverName,
       timestamp: new Date().toISOString(),
     });
 
-    // TODO (notificaciones): cuando Expo Push esté configurado,
-    // llamar a notificationsService.notifyHorn(clientPushToken, driverName)
+    // PUSH: notificar bocina al cliente (funciona aunque app esté cerrada)
+    const ride = await this.ridesService.getRideById(data.rideId);
+    if (ride?.clientId) {
+      void this.notificationsService.notifyHorn(ride.clientId, driverName);
+    }
 
     return { success: true };
   }
@@ -269,6 +302,10 @@ export class RidesGateway implements OnGatewayConnection {
       const ride = await this.ridesService.expireRide(data.rideId);
       // Notificar al cliente que su pedido expiró
       this.server.emit('ride_expired', { rideId: data.rideId });
+
+      // PUSH: notificar expiración al cliente
+      void this.notificationsService.notifyRideExpired(ride.clientId);
+
       return ride;
     } catch (error) {
       console.error('Error in expire_ride:', error);

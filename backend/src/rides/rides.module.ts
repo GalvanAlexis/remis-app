@@ -4,9 +4,10 @@ import { RidesService } from './rides.service';
 import { RidesGateway } from './rides.gateway';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule],
+  imports: [AuthModule, PrismaModule, NotificationsModule],
   controllers: [RidesController],
   providers: [RidesService, RidesGateway],
 })

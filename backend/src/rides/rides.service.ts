@@ -386,4 +386,16 @@ export class RidesService {
     });
     return ride?.clientId ?? null;
   }
+
+  /** Obtiene un viaje por ID con datos básicos (para push notifications). */
+  async getRideById(rideId: string) {
+    return this.prisma.rideRequest.findUnique({
+      where: { id: rideId },
+      select: {
+        id: true,
+        clientId: true,
+        status: true,
+      },
+    });
+  }
 }
