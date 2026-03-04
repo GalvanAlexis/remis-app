@@ -35,8 +35,9 @@ export class CreateOfferDto {
   @IsString()
   rideRequestId: string;
 
+  @IsOptional()
   @IsString()
-  driverId: string;
+  driverId?: string;
 
   @IsNumber()
   @Min(1)

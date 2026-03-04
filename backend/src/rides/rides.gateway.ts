@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { RidesService } from './rides.service';
 import { UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { WsJwtGuard } from '../auth/guards/ws-jwt.guard';
+import { IsVerifiedGuard } from '../auth/guards/is-verified.guard';
 import {
   CreateRideRequestDto,
   CreateOfferDto,
@@ -75,7 +76,7 @@ export class RidesGateway implements OnGatewayConnection {
     }
   }
 
-  @UseGuards(WsJwtGuard)
+  @UseGuards(WsJwtGuard, IsVerifiedGuard)
   @UsePipes(new ValidationPipe())
   @SubscribeMessage('send_offer')
   async handleSendOffer(

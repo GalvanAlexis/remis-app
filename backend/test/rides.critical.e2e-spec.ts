@@ -81,6 +81,42 @@ describe('Rides — Flujo Completo (E2E)', () => {
     const port = (app.getHttpServer().address() as { port: number }).port;
     serverAddress = `http://localhost:${port}`;
 
+    // Limpiar restos de corridas anteriores antes de arrancar
+    // Rating → Offer → RideRequest → User (con cascade automático en Profile/DriverDocument)
+    await prisma.rating
+      .deleteMany({
+        where: {
+          OR: [
+            { fromUser: { username: { startsWith: 'test_' } } },
+            { toUser: { username: { startsWith: 'test_' } } },
+          ],
+        },
+      })
+      .catch(() => null);
+
+    await prisma.offer
+      .deleteMany({
+        where: {
+          OR: [
+            { driver: { username: { startsWith: 'test_' } } },
+            { rideRequest: { client: { username: { startsWith: 'test_' } } } },
+          ],
+        },
+      })
+      .catch(() => null);
+
+    await prisma.rideRequest
+      .deleteMany({
+        where: { client: { username: { startsWith: 'test_' } } },
+      })
+      .catch(() => null);
+
+    await prisma.user
+      .deleteMany({
+        where: { username: { startsWith: 'test_' } },
+      })
+      .catch(() => null);
+
     // Registrar cliente
     const clienteRes = await request(app.getHttpServer())
       .post('/auth/register')
@@ -145,9 +181,41 @@ describe('Rides — Flujo Completo (E2E)', () => {
     clienteSocket?.disconnect();
     choferSocket?.disconnect();
     await new Promise((r) => setTimeout(r, 500));
+
+    // Cleanup ordenado respetando FK:
+    // Rating → Offer → RideRequest → User (con cascade automático en Profile/DriverDocument)
+    await prisma.rating
+      .deleteMany({
+        where: {
+          OR: [
+            { fromUser: { username: { startsWith: 'test_' } } },
+            { toUser: { username: { startsWith: 'test_' } } },
+          ],
+        },
+      })
+      .catch(() => null);
+
+    await prisma.offer
+      .deleteMany({
+        where: {
+          OR: [
+            { driver: { username: { startsWith: 'test_' } } },
+            { rideRequest: { client: { username: { startsWith: 'test_' } } } },
+          ],
+        },
+      })
+      .catch(() => null);
+
+    await prisma.rideRequest
+      .deleteMany({
+        where: { client: { username: { startsWith: 'test_' } } },
+      })
+      .catch(() => null);
+
     await prisma.user
       .deleteMany({ where: { username: { startsWith: 'test_' } } })
       .catch(() => null);
+
     await app.close();
   });
 
@@ -248,13 +316,17 @@ describe('Rides — Flujo Completo (E2E)', () => {
         clienteSocket,
         choferSocket,
         'send_offer',
-        { rideRequestId: createdRideId, precio: 1500, minutos: 5 },
+        {
+          rideRequestId: createdRideId,
+          quotedPrice: 1500,
+          estimatedMinutes: 5,
+        },
         'new_offer',
       );
 
       expect(offer).toHaveProperty('id');
-      expect(Number(offer.precio)).toBe(1500);
-      createdOfferId = offer.id;
+      createdOfferId = offer.id; // capturar ANTES de assertions opcionales
+      expect(Number(offer.quotedPrice)).toBe(1500);
     });
 
     it('3️⃣  accept_offer → cliente recibe ride_matched con status MATCHED', async () => {
