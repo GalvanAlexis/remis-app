@@ -1,0 +1,120 @@
+name: 🧪 Tests — Remis Backend
+
+on:
+  push:
+    branches: [master, main, develop]
+    paths:
+      - "backend/**"
+  pull_request:
+    branches: [master, main, develop]
+    paths:
+      - "backend/**"
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  # ── 1. Unit Tests (sin base de datos) ───────────────────────────────────────
+  unit-tests:
+    name: 🔬 Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Unit Tests + Coverage
+        run: npx jest --runInBand --coverage --forceExit
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          JWT_EXPIRATION: "15m"
+          JWT_REFRESH_EXPIRATION: "7d"
+          NODE_ENV: "test"
+          # Unit tests no necesitan DB real — Prisma usa mocks
+
+  # ── 2. Integration Tests (con PostgreSQL) ───────────────────────────────────
+  integration-tests:
+    name: 🔗 Integration Tests (Critical + Medium + Low)
+    runs-on: ubuntu-latest
+    needs: unit-tests # Solo corre si los unit tests pasan
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: facilFacil123#
+          POSTGRES_DB: remis_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+
+      - name: Run Prisma Migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+
+      - name: 🔴 Critical Tests (Auth + Rides WS)
+        run: npm run test:critical
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          JWT_EXPIRATION: "15m"
+          JWT_REFRESH_EXPIRATION: "7d"
+          NODE_ENV: "test"
+
+      - name: 🟡 Medium Tests (Profiles + Docs + Ratings + Guards)
+        run: npm run test:medium
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          JWT_EXPIRATION: "15m"
+          JWT_REFRESH_EXPIRATION: "7d"
+          NODE_ENV: "test"
+
+      - name: 🟢 Low Tests (Stats + Notifications + Premium Guard)
+        run: npm run test:low
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          JWT_EXPIRATION: "15m"
+          JWT_REFRESH_EXPIRATION: "7d"
+          NODE_ENV: "test"
