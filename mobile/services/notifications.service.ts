@@ -1,5 +1,6 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 import api from "./api";
 
 /**
@@ -23,16 +24,31 @@ export async function registerForPushNotificationsAsync(): Promise<
     return null;
   }
 
-  // Obtener Expo Push Token — lanza error en simuladores iOS (se captura silenciosamente)
+  // Obtener Expo Push Token
   try {
-    const tokenData = await Notifications.getExpoPushTokenAsync();
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      Constants.easConfig?.projectId;
+
+    if (!projectId) {
+      console.log(
+        "[Notifications] No se encontró projectId. Las notificaciones push no funcionarán sin configuración EAS.",
+      );
+      return null;
+    }
+
+    const tokenData = await Notifications.getExpoPushTokenAsync({
+      projectId,
+    });
     const token = tokenData.data;
     console.log("[Notifications] Token obtenido:", token.slice(0, 40) + "...");
     return token;
   } catch (err) {
-    // Común en simuladores iOS donde push tokens no están disponibles
+    // Solo loguear como warning si no es un error de configuración esperable
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn("[Notifications] No se pudo obtener token push:", msg);
+    if (!msg.includes("projectId")) {
+      console.warn("[Notifications] Error al obtener push token:", msg);
+    }
     return null;
   }
 }

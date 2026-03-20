@@ -90,11 +90,11 @@ const StarBar = ({
       <ProgressBar
         progress={max > 0 ? row.count / max : 0}
         color={
-          row.star >= 4 ? "#22C55E" : row.star === 3 ? "#F59E0B" : "#EF4444"
+          row.star >= 4 ? "#22C55E" : row.star === 3 ? colors.secondary : colors.error
         }
         style={{ flex: 1, height: 8, borderRadius: 4, marginHorizontal: 8 }}
       />
-      <Text style={{ color: "#94A3B8", fontSize: 11, width: 20 }}>
+      <Text style={{ color: colors.placeholder, fontSize: 11, width: 20 }}>
         {row.count}
       </Text>
     </View>
@@ -114,7 +114,7 @@ const EarningsChart = ({
   const maxVal = Math.max(...last14.map((d) => d.total), 1);
   return (
     <View>
-      <Text style={{ color: "#94A3B8", fontSize: 11, marginBottom: 8 }}>
+      <Text style={{ color: colors.placeholder, fontSize: 11, marginBottom: 8 }}>
         Últimos 14 días
       </Text>
       <View
@@ -132,11 +132,11 @@ const EarningsChart = ({
                 width: "80%",
                 height: Math.max(4, (d.total / maxVal) * 68),
                 backgroundColor:
-                  i === last14.length - 1 ? colors.primary : "#334155",
+                  i === last14.length - 1 ? colors.primary : colors.divider,
                 borderRadius: 4,
               }}
             />
-            <Text style={{ color: "#475569", fontSize: 8, marginTop: 2 }}>
+            <Text style={{ color: colors.placeholder, fontSize: 8, marginTop: 2 }}>
               {d.date.slice(8)}
             </Text>
           </View>
@@ -160,10 +160,10 @@ const HourHeatmap = ({ data, colors }: { data: HourSlot[]; colors: any }) => {
             intensity > 0.66
               ? colors.primary
               : intensity > 0.33
-                ? "#1E40AF"
+                ? colors.primary + "CC"
                 : intensity > 0
-                  ? "#1E3A5F"
-                  : "#1E293B";
+                  ? colors.primary + "66"
+                  : colors.divider;
           return (
             <View
               key={slot.hour}
@@ -176,14 +176,14 @@ const HourHeatmap = ({ data, colors }: { data: HourSlot[]; colors: any }) => {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: "#CBD5E1", fontSize: 9 }}>
+              <Text style={{ color: colors.text, fontSize: 9 }}>
                 {slot.hour}h
               </Text>
             </View>
           );
         })}
       </View>
-      <Text style={{ color: "#64748B", fontSize: 11, marginTop: 8 }}>
+      <Text style={{ color: colors.placeholder, fontSize: 11, marginTop: 8 }}>
         🔥 Picos: {peaks.map((p) => `${p.hour}hs`).join(", ")}
       </Text>
     </View>
@@ -251,7 +251,7 @@ export default function StatsScreen() {
   if (user?.role !== "CHOFER") {
     return (
       <View style={[s.center, { backgroundColor: colors.background }]}>
-        <Text style={{ color: "#64748B" }}>Solo disponible para choferes.</Text>
+        <Text style={{ color: colors.placeholder }}>Solo disponible para choferes.</Text>
       </View>
     );
   }
@@ -295,7 +295,7 @@ export default function StatsScreen() {
                 {/* KPI Cards */}
                 <View style={s.kpiRow}>
                   <Surface style={[s.kpi, { backgroundColor: colors.surface }]}>
-                    <Text style={s.kpiVal}>{freeData.totalRides}</Text>
+                    <Text style={[s.kpiVal, { color: colors.text }]}>{freeData.totalRides}</Text>
                     <Text style={s.kpiLabel}>Viajes totales</Text>
                   </Surface>
                   <Surface style={[s.kpi, { backgroundColor: colors.surface }]}>
@@ -305,7 +305,7 @@ export default function StatsScreen() {
                     <Text style={s.kpiLabel}>Este mes</Text>
                   </Surface>
                   <Surface style={[s.kpi, { backgroundColor: colors.surface }]}>
-                    <Text style={[s.kpiVal, { color: "#F59E0B" }]}>
+                    <Text style={[s.kpiVal, { color: colors.secondary }]}>
                       {freeData.avgRating?.toFixed(1) ?? "—"}⭐
                     </Text>
                     <Text style={s.kpiLabel}>
@@ -329,7 +329,7 @@ export default function StatsScreen() {
                         {i > 0 && (
                           <Divider
                             style={{
-                              backgroundColor: "#1E293B",
+                              backgroundColor: colors.divider,
                               marginVertical: 8,
                             }}
                           />
@@ -343,7 +343,7 @@ export default function StatsScreen() {
                               {ride.origin}
                             </Text>
                             <Text
-                              style={{ color: "#64748B", fontSize: 12 }}
+                              style={{ color: colors.placeholder, fontSize: 12 }}
                               numberOfLines={1}
                             >
                               → {ride.dest}
@@ -355,7 +355,7 @@ export default function StatsScreen() {
                             >
                               {fmt(ride.price)}
                             </Text>
-                            <Text style={{ color: "#475569", fontSize: 11 }}>
+                            <Text style={{ color: colors.placeholder, fontSize: 11 }}>
                               {new Date(ride.date).toLocaleDateString("es-AR")}
                             </Text>
                           </View>
@@ -435,7 +435,7 @@ export default function StatsScreen() {
                       <Text style={s.kpiLabel}>Este mes</Text>
                     </View>
                     <View style={s.miniKpi}>
-                      <Text style={[s.kpiVal, { color: "#94A3B8" }]}>
+                      <Text style={[s.kpiVal, { color: colors.placeholder }]}>
                         {fmt(premiumData.lastMonthTotal)}
                       </Text>
                       <Text style={s.kpiLabel}>Mes anterior</Text>
@@ -460,7 +460,7 @@ export default function StatsScreen() {
                     </View>
                   </View>
                   <View style={{ marginTop: 8 }}>
-                    <Text style={{ color: "#64748B", fontSize: 12 }}>
+                    <Text style={{ color: colors.placeholder, fontSize: 12 }}>
                       📈 Proyección mensual:{" "}
                       <Text style={{ color: "#22C55E", fontWeight: "bold" }}>
                         {fmt(premiumData.monthlyProjection)}
@@ -486,7 +486,7 @@ export default function StatsScreen() {
                       : "—"}
                   </Text>
                   <Text
-                    style={{ color: "#64748B", fontSize: 12, marginTop: 4 }}
+                    style={{ color: colors.placeholder, fontSize: 12, marginTop: 4 }}
                   >
                     {premiumData.acceptedOffers} de {premiumData.totalOffers}{" "}
                     ofertas aceptadas
@@ -525,7 +525,7 @@ export default function StatsScreen() {
                   ) : (
                     premiumData.topZones.map((z, i) => (
                       <View key={i} style={s.topItem}>
-                        <Text style={{ color: "#F59E0B", width: 20 }}>
+                        <Text style={{ color: colors.secondary, width: 20 }}>
                           {i + 1}.
                         </Text>
                         <Text
@@ -534,7 +534,7 @@ export default function StatsScreen() {
                         >
                           {z.label}
                         </Text>
-                        <Text style={{ color: "#64748B", fontSize: 12 }}>
+                        <Text style={{ color: colors.placeholder, fontSize: 12 }}>
                           {z.count}x
                         </Text>
                       </View>
@@ -549,7 +549,7 @@ export default function StatsScreen() {
                   </Text>
                   {premiumData.topRoutes.map((r, i) => (
                     <View key={i} style={s.topItem}>
-                      <Text style={{ color: "#F59E0B", width: 20 }}>
+                      <Text style={{ color: colors.secondary, width: 20 }}>
                         {i + 1}.
                       </Text>
                       <Text
@@ -558,7 +558,7 @@ export default function StatsScreen() {
                       >
                         {r.label}
                       </Text>
-                      <Text style={{ color: "#64748B", fontSize: 12 }}>
+                      <Text style={{ color: colors.placeholder, fontSize: 12 }}>
                         {r.count}x
                       </Text>
                     </View>
@@ -587,7 +587,7 @@ export default function StatsScreen() {
                   <View style={{ marginTop: 12 }}>
                     <Text
                       style={{
-                        color: "#64748B",
+                        color: colors.placeholder,
                         fontSize: 12,
                         marginBottom: 8,
                       }}
@@ -604,7 +604,7 @@ export default function StatsScreen() {
                           key={i}
                           style={{
                             borderLeftWidth: 2,
-                            borderLeftColor: "#22C55E",
+                            borderLeftColor: colors.secondary,
                             paddingLeft: 10,
                             marginBottom: 8,
                           }}
@@ -642,7 +642,7 @@ export default function StatsScreen() {
                     {premiumData.cancellationRate}%
                   </Text>
                   <Text
-                    style={{ color: "#64748B", fontSize: 12, marginTop: 4 }}
+                    style={{ color: colors.placeholder, fontSize: 12, marginTop: 4 }}
                   >
                     {premiumData.cancellationRate < 10
                       ? "✅ Tasa baja — buena señal"
@@ -678,10 +678,10 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   miniKpi: { flex: 1, alignItems: "center" },
-  kpiVal: { fontSize: 22, fontWeight: "bold", color: "#F8FAFC" },
+  kpiVal: { fontSize: 22, fontWeight: "bold" },
   kpiLabel: {
     fontSize: 11,
-    color: "#64748B",
+    color: "#94A3B8",
     marginTop: 4,
     textAlign: "center",
   },
@@ -716,12 +716,12 @@ const s = StyleSheet.create({
     textAlign: "center",
   },
   paywallDesc: {
-    color: "#94A3B8",
+    color: "#64748B",
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 16,
   },
   paywallFeatures: { width: "100%", gap: 6 },
-  paywallFeatureItem: { color: "#CBD5E1", fontSize: 14 },
+  paywallFeatureItem: { color: "#475569", fontSize: 14 },
 });

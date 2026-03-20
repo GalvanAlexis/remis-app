@@ -146,8 +146,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   label: {
-    marginTop: 6,
-    fontSize: 12,
+    marginTop: 8,
+    fontSize: 16,
+    fontWeight: "500",
   },
   checkContainer: {
     position: "absolute",

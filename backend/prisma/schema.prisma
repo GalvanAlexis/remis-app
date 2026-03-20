@@ -97,7 +97,7 @@ model RideRequest {
   offers          Offer[]
   selectedOfferId String?    @unique
   selectedOffer   Offer?     @relation("SelectedOffer", fields: [selectedOfferId], references: [id])
-  rating          Rating?
+  ratings         Rating[]
 
   @@map("ride_requests")
 }
@@ -123,7 +123,7 @@ model Offer {
 
 model Rating {
   id          String      @id @default(uuid())
-  rideId      String      @unique
+  rideId      String
   ride        RideRequest @relation(fields: [rideId], references: [id])
 
   fromUserId  String
@@ -137,6 +137,7 @@ model Rating {
 
   createdAt   DateTime    @default(now())
 
+  @@unique([rideId, fromUserId])
   @@map("ratings")
 }
 

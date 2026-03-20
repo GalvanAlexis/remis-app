@@ -14,10 +14,14 @@ async function main() {
     create: {
       username,
       password: hashedPassword,
-      nombre: 'Test',
-      apellido: 'Maestro',
-      dni: '12345678',
       role: 'CLIENTE',
+      profile: {
+        create: {
+          nombre: 'Test',
+          apellido: 'Maestro',
+          dni: '12345678',
+        },
+      },
     },
   });
   

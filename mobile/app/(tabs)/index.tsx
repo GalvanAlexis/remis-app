@@ -27,6 +27,7 @@ import { ridesService } from "../../services/rides.service";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useSocket } from "../../hooks/useSocket";
 import { useToast } from "../../context/ToastContext";
+import { RatingStars } from "../../components/RatingStars";
 
 const EXPIRE_SECONDS_GLOBAL = 3600;
 
@@ -37,6 +38,7 @@ const RideTimerDisplay = ({
   createdAt: string | Date;
   onExpire?: () => void;
 }) => {
+  const { colors } = useAppTheme();
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -68,7 +70,7 @@ const RideTimerDisplay = ({
 
   if (elapsed >= EXPIRE_SECONDS_GLOBAL) {
     return (
-      <Text style={{ color: "#EF4444", fontWeight: "bold", fontSize: 13 }}>
+      <Text style={{ color: colors.error, fontWeight: "bold", fontSize: 13 }}>
         Expirado
       </Text>
     );
@@ -81,7 +83,7 @@ const RideTimerDisplay = ({
   const s = (remaining % 60).toString().padStart(2, "0");
 
   return (
-    <Text style={{ color: "#F59E0B", fontWeight: "bold", fontSize: 13 }}>
+    <Text style={{ color: colors.secondary, fontWeight: "bold", fontSize: 13 }}>
       ⏱ Faltan {m}:{s}
     </Text>
   );
@@ -544,8 +546,8 @@ export default function HomeScreen() {
             <Button
               mode="outlined"
               onPress={handleCancelRide}
-              style={{ marginTop: 12, borderColor: "#EF4444" }}
-              textColor="#EF4444"
+              style={{ marginTop: 12, borderColor: colors.error }}
+              textColor={colors.error}
             >
               Cancelar Viaje
             </Button>
@@ -568,7 +570,7 @@ export default function HomeScreen() {
           <Button
             mode="text"
             onPress={() => router.replace("/(auth)/welcome")}
-            labelStyle={{ color: "#3B82F6" }}
+            labelStyle={{ color: colors.primary }}
           >
             Volver
           </Button>
@@ -734,14 +736,14 @@ export default function HomeScreen() {
                       <View>
                         <Text
                           variant="titleMedium"
-                          style={{ color: "#FFFFFF" }}
+                          style={{ color: colors.text }}
                         >
                           {offer.driver?.profile?.nombre || "Chofer Disponible"}
                         </Text>
                         {/* Rating y viajes totales */}
                         <Text
                           variant="labelSmall"
-                          style={{ color: "#94A3B8", marginTop: 2 }}
+                          style={{ color: colors.placeholder, marginTop: 2 }}
                         >
                           {avgRating
                             ? `⭐ ${avgRating} · ${totalTrips} viaje${totalTrips !== 1 ? "s" : ""}`
@@ -752,7 +754,7 @@ export default function HomeScreen() {
                         ${offer.quotedPrice}
                       </Text>
                     </View>
-                    <Text variant="bodyMedium" style={{ color: "#94A3B8" }}>
+                    <Text variant="bodyMedium" style={{ color: colors.placeholder }}>
                       Llega en {offer.estimatedMinutes} mins
                     </Text>
                     <View style={styles.offerActions}>
@@ -764,14 +766,15 @@ export default function HomeScreen() {
                           setDetailsDialogVisible(true);
                           loadUserRatings(offer.driverId);
                         }}
-                        labelStyle={{ color: "#94A3B8" }}
+                        labelStyle={{ color: colors.placeholder }}
                       >
                         DETALLES
                       </Button>
                       <Button
                         mode="contained"
                         onPress={() => handleAcceptOffer(offer)}
-                        buttonColor="#2563EB"
+                        buttonColor={colors.primary}
+                        textColor="white"
                       >
                         ACEPTAR
                       </Button>
@@ -798,7 +801,7 @@ export default function HomeScreen() {
           <Text
             variant="bodyMedium"
             style={{
-              color: isOnline ? colors.secondary : "#EF4444",
+              color: isOnline ? colors.secondary : colors.error,
               fontWeight: "bold",
             }}
           >
@@ -812,9 +815,9 @@ export default function HomeScreen() {
         />
       </View>
 
-      <Surface style={styles.driverControls} elevation={0}>
+      <Surface style={[styles.driverControls, { backgroundColor: colors.surface }]} elevation={0}>
         <View style={styles.switchRow}>
-          <Text variant="bodyMedium" style={{ color: "#FFFFFF" }}>
+          <Text variant="bodyMedium" style={{ color: colors.text }}>
             Solo clientes registrados
           </Text>
           <Switch
@@ -909,8 +912,8 @@ export default function HomeScreen() {
                     rideId: activeRide?.id,
                   });
                 }}
-                style={{ borderColor: "#F59E0B" }}
-                textColor="#F59E0B"
+                style={{ borderColor: colors.secondary }}
+                textColor={colors.secondary}
                 icon="bullhorn"
                 contentStyle={{ height: 44 }}
               >
@@ -936,8 +939,8 @@ export default function HomeScreen() {
                     rideId: activeRide?.id,
                   });
                 }}
-                style={{ borderColor: "#64748B" }}
-                textColor="#94A3B8"
+                style={{ borderColor: colors.divider }}
+                textColor={colors.placeholder}
                 icon="bullhorn"
                 contentStyle={{ height: 44 }}
               >
@@ -1009,19 +1012,19 @@ export default function HomeScreen() {
               </View>
               <List.Item
                 title={req.originAddress}
-                titleStyle={{ color: "#FFFFFF" }}
+                titleStyle={{ color: colors.text }}
                 description="Origen"
-                descriptionStyle={{ color: "#94A3B8" }}
+                descriptionStyle={{ color: colors.placeholder }}
                 left={(p) => (
                   <List.Icon {...p} icon="map-marker" color={colors.primary} />
                 )}
               />
               <List.Item
                 title={req.destAddress}
-                titleStyle={{ color: "#FFFFFF" }}
+                titleStyle={{ color: colors.text }}
                 description="Destino"
-                descriptionStyle={{ color: "#94A3B8" }}
-                left={(p) => <List.Icon {...p} icon="flag" color="#EF4444" />}
+                descriptionStyle={{ color: colors.placeholder }}
+                left={(p) => <List.Icon {...p} icon="flag" color={colors.error} />}
               />
               <View style={styles.offerActions}>
                 <Button
@@ -1032,7 +1035,7 @@ export default function HomeScreen() {
                     setDetailsDialogVisible(true);
                     if (req.clientId) loadUserRatings(req.clientId);
                   }}
-                  labelStyle={{ color: "#94A3B8" }}
+                  labelStyle={{ color: colors.placeholder }}
                 >
                   DETALLES
                 </Button>
@@ -1042,7 +1045,8 @@ export default function HomeScreen() {
                     setSelectedRide(req);
                     setOfferDialogVisible(true);
                   }}
-                  buttonColor="#2563EB"
+                  buttonColor={colors.primary}
+                  textColor="white"
                 >
                   RESPONDER
                 </Button>
@@ -1162,8 +1166,8 @@ export default function HomeScreen() {
                     </Text>
                   </>
                 ) : (
-                  <Surface style={styles.lockNotice} elevation={0}>
-                    <Text style={{ color: "#94A3B8" }}>
+                  <Surface style={[styles.lockNotice, { backgroundColor: colors.surface, borderColor: colors.divider, borderWidth: 1 }]} elevation={0}>
+                    <Text style={{ color: colors.placeholder }}>
                       🔒 Regístrate para ver contacto, patente y datos
                       completos.
                     </Text>
@@ -1183,9 +1187,11 @@ export default function HomeScreen() {
                   selectedUserRatings.map((rating: any) => (
                     <View key={rating.id} style={styles.ratingItem}>
                       <View style={styles.ratingHeader}>
-                        <Text style={{ fontWeight: "bold", color: "#F59E0B" }}>
-                          {rating.score} ★
-                        </Text>
+                        <RatingStars
+                          rating={rating.score}
+                          size={16}
+                          disabled
+                        />
                         <Text style={styles.ratingDate}>
                           {new Date(rating.createdAt).toLocaleDateString()}
                         </Text>
@@ -1203,7 +1209,7 @@ export default function HomeScreen() {
                     </View>
                   ))
                 ) : (
-                  <Text variant="bodySmall" style={{ color: "#64748B" }}>
+                  <Text variant="bodySmall" style={{ color: colors.placeholder }}>
                     Sin reseñas aún.
                   </Text>
                 )}
@@ -1231,9 +1237,11 @@ export default function HomeScreen() {
                   selectedUserRatings.map((rating: any) => (
                     <View key={rating.id} style={styles.ratingItem}>
                       <View style={styles.ratingHeader}>
-                        <Text style={{ fontWeight: "bold", color: "#F59E0B" }}>
-                          {rating.score} ★
-                        </Text>
+                        <RatingStars
+                          rating={rating.score}
+                          size={16}
+                          disabled
+                        />
                         <Text style={styles.ratingDate}>
                           {new Date(rating.createdAt).toLocaleDateString()}
                         </Text>
@@ -1244,7 +1252,7 @@ export default function HomeScreen() {
                     </View>
                   ))
                 ) : (
-                  <Text variant="bodySmall" style={{ color: "#64748B" }}>
+                  <Text variant="bodySmall" style={{ color: colors.placeholder }}>
                     Sin calificaciones.
                   </Text>
                 )}
@@ -1273,21 +1281,22 @@ export default function HomeScreen() {
             Calificar Viaje
           </Dialog.Title>
           <Dialog.Content>
-            <View style={styles.starRow}>
-              {[1, 2, 3, 4, 5].map((s) => (
-                <Button
-                  key={s}
-                  mode={ratingScore === s ? "contained" : "outlined"}
-                  onPress={() => setRatingScore(s)}
-                  compact
-                  buttonColor={ratingScore === s ? "#F59E0B" : "transparent"}
-                  textColor={ratingScore === s ? "#000000" : "#F59E0B"}
-                  style={{ borderColor: "#F59E0B" }}
-                >
-                  {s}★
-                </Button>
-              ))}
-            </View>
+            <Text
+              variant="bodyMedium"
+              style={{
+                textAlign: "center",
+                color: colors.text,
+                marginBottom: 20,
+                opacity: 0.8,
+              }}
+            >
+              ¿Cómo fue tu experiencia en este viaje?
+            </Text>
+            <RatingStars
+              rating={ratingScore}
+              onRatingChange={setRatingScore}
+              size={40}
+            />
             <TextInput
               label="Comentario"
               value={ratingComment}
@@ -1295,7 +1304,7 @@ export default function HomeScreen() {
               mode="outlined"
               style={{ marginTop: 20, backgroundColor: "transparent" }}
               textColor={colors.text}
-              activeOutlineColor="#F59E0B"
+              activeOutlineColor={colors.primary}
               outlineColor={colors.divider}
             />
           </Dialog.Content>
@@ -1334,13 +1343,10 @@ const styles = StyleSheet.create({
   mainSurface: {
     padding: 20,
     borderRadius: 16,
-    backgroundColor: "#1E293B", // Slate 800
     marginBottom: 25,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.05)",
   },
   surfaceTitle: {
-    color: "#FFFFFF",
     fontWeight: "bold",
     marginBottom: 20,
   },
@@ -1353,7 +1359,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   sectionTitle: {
-    color: "#FFFFFF",
     fontWeight: "bold",
     marginBottom: 15,
     marginTop: 10,
@@ -1361,10 +1366,8 @@ const styles = StyleSheet.create({
   offerCard: {
     padding: 15,
     borderRadius: 12,
-    backgroundColor: "#1E293B",
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
   },
   rideHeader: {
     flexDirection: "row",
@@ -1373,7 +1376,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   priceTag: {
-    color: "#3B82F6", // Azure Blue
     fontWeight: "bold",
     fontSize: 20,
   },
@@ -1386,7 +1388,6 @@ const styles = StyleSheet.create({
   driverControls: {
     padding: 15,
     borderRadius: 12,
-    backgroundColor: "#1E293B",
     marginBottom: 20,
   },
   switchRow: {
@@ -1402,7 +1403,6 @@ const styles = StyleSheet.create({
   ratingItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.05)",
   },
   ratingHeader: {
     flexDirection: "row",
@@ -1412,14 +1412,11 @@ const styles = StyleSheet.create({
   },
   ratingDate: {
     fontSize: 10,
-    color: "#64748B",
   },
   lockNotice: {
     marginTop: 15,
     padding: 15,
-    backgroundColor: "rgba(37, 99, 235, 0.1)",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "rgba(37, 99, 235, 0.2)",
   },
 });

@@ -96,7 +96,7 @@ export default function ProfileScreen() {
               size={20}
               color={colors.primary}
             />
-            <Text variant="bodyMedium" style={styles.infoLabel}>
+            <Text variant="bodyMedium" style={[styles.infoLabel, { color: colors.placeholder }]}>
               Usuario:
             </Text>
             <Text
@@ -114,7 +114,7 @@ export default function ProfileScreen() {
                 size={20}
                 color={colors.primary}
               />
-              <Text variant="bodyMedium" style={styles.infoLabel}>
+              <Text variant="bodyMedium" style={[styles.infoLabel, { color: colors.placeholder }]}>
                 DNI:
               </Text>
               <Text
@@ -127,22 +127,22 @@ export default function ProfileScreen() {
           )}
 
           {user.profile?.direccion && (
-            <View style={styles.infoRow}>
-              <MaterialCommunityIcons
-                name="map-marker"
-                size={20}
-                color={colors.primary}
-              />
-              <Text variant="bodyMedium" style={styles.infoLabel}>
-                Dirección:
-              </Text>
-              <Text
-                variant="bodyMedium"
-                style={[styles.infoText, { color: colors.text }]}
-              >
-                {user.profile.direccion}
-              </Text>
-            </View>
+              <View style={styles.infoRow}>
+                <MaterialCommunityIcons
+                  name="map-marker"
+                  size={20}
+                  color={colors.primary}
+                />
+                <Text variant="bodyMedium" style={[styles.infoLabel, { color: colors.placeholder }]}>
+                  Dirección:
+                </Text>
+                <Text
+                  variant="bodyMedium"
+                  style={[styles.infoText, { color: colors.text }]}
+                >
+                  {user.profile.direccion}
+                </Text>
+              </View>
           )}
 
           {user.role === "CHOFER" && user.driverDocument && (
@@ -244,16 +244,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 15,
     marginBottom: 5,
-    color: "#fff",
   },
   roleChip: {
     marginTop: 5,
-    borderColor: "#333",
-    backgroundColor: "#2a2a2a",
   },
   divider: {
     marginVertical: 15,
-    backgroundColor: "#333",
   },
   infoRow: {
     flexDirection: "row",
@@ -262,17 +258,14 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     marginLeft: 10,
-    color: "#aaa",
     width: 80,
   },
   infoText: {
     flex: 1,
-    color: "#fff",
   },
   sectionTitle: {
     fontWeight: "bold",
     marginBottom: 10,
-    color: "#03dac6",
   },
   logoutButton: {
     marginBottom: 20,

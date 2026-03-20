@@ -35,8 +35,9 @@ const PERIOD_LABELS: Record<FilterPeriod, string> = {
 };
 
 function StarRating({ score }: { score: number }) {
+  const { colors } = useAppTheme();
   return (
-    <Text style={{ color: "#F59E0B", fontSize: 14 }}>
+    <Text style={{ color: colors.secondary, fontSize: 14 }}>
       {"★".repeat(score)}
       {"☆".repeat(5 - score)}
     </Text>
@@ -64,7 +65,7 @@ function RideCard({
   });
 
   const isCompleted = ride.status === "COMPLETED";
-  const statusColor = isCompleted ? "#22C55E" : "#EF4444";
+  const statusColor = isCompleted ? colors.secondary : colors.error;
   const statusLabel = isCompleted ? "Completado" : "Cancelado";
 
   const otherPartyName =
@@ -121,7 +122,7 @@ function RideCard({
         </View>
         <View style={[styles.routeLine, { backgroundColor: colors.divider }]} />
         <View style={styles.routeRow}>
-          <Text style={[styles.routeDot, { color: "#EF4444" }]}>●</Text>
+          <Text style={[styles.routeDot, { color: colors.error }]}>●</Text>
           <Text
             variant="bodyMedium"
             style={{ color: colors.text, flex: 1 }}
@@ -247,7 +248,7 @@ export default function HistoryScreen() {
               },
             ]}
             textStyle={{
-              color: filter === f ? "#FFFFFF" : colors.text,
+              color: filter === f ? (colors.primary === "#FFFFFF" ? "#000" : "#FFF") : colors.text,
               fontSize: 12,
             }}
           >
@@ -270,7 +271,7 @@ export default function HistoryScreen() {
               },
             ]}
             textStyle={{
-              color: period === p ? "#FFFFFF" : colors.text,
+              color: period === p ? (colors.secondary === "#FFFFFF" ? "#000" : "#FFF") : colors.text,
               fontSize: 12,
             }}
           >
@@ -285,7 +286,7 @@ export default function HistoryScreen() {
         </View>
       ) : error ? (
         <View style={styles.centered}>
-          <Text style={{ color: "#EF4444", textAlign: "center" }}>{error}</Text>
+          <Text style={{ color: colors.error, textAlign: "center" }}>{error}</Text>
         </View>
       ) : (
         <FlatList

@@ -81,7 +81,9 @@ export class RidesService {
           include: {
             profile: true,
             driverDocs: true,
-            ratingsReceived: { select: { score: true } },
+            ratingsReceived: {
+              select: { score: true },
+            },
           },
         },
       },
@@ -173,7 +175,9 @@ export class RidesService {
         client: {
           include: {
             profile: true,
-            ratingsReceived: { select: { score: true } },
+            ratingsReceived: {
+              select: { score: true },
+            },
           },
         },
         offers: {
@@ -202,6 +206,31 @@ export class RidesService {
     score: number;
     comment?: string;
   }) {
+    // 1. Verificar existencia y estado del viaje
+    const ride = await this.prisma.rideRequest.findUnique({
+      where: { id: data.rideId },
+      include: { selectedOffer: true },
+    });
+
+    if (!ride) throw new NotFoundException('Viaje no encontrado');
+    if (ride.status !== RideStatus.COMPLETED) {
+      throw new BadRequestException('Solo se pueden calificar viajes finalizados');
+    }
+
+    // 2. Verificar que el usuario 'from' sea parte del viaje
+    const isClient = ride.clientId === data.fromUserId;
+    const isDriver = ride.selectedOffer?.driverId === data.fromUserId;
+
+    if (!isClient && !isDriver) {
+      throw new BadRequestException('No tienes permiso para calificar este viaje');
+    }
+
+    // 3. Verificar que no se esté calificando a sí mismo
+    if (data.fromUserId === data.toUserId) {
+      throw new BadRequestException('No puedes calificarte a ti mismo');
+    }
+
+    // 4. Crear la calificación (el índice @@unique de Prisma evita duplicados)
     return this.prisma.rating.create({
       data: {
         rideId: data.rideId,
@@ -238,7 +267,7 @@ export class RidesService {
               driver: { include: { profile: true } },
             },
           },
-          rating: true,
+          ratings: true,
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -355,27 +384,28 @@ export class RidesService {
   }
 
   async getRatingsForUser(targetUserId: string, requesterRole: string) {
-    // Definir filtros de visibilidad
-    let whereClause: any = { toUserId: targetUserId };
+    const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
-    if (requesterRole === 'CLIENTE') {
-      // El cliente solo puede ver reseñas de OTROS CLIENTES (from Role CLIENTE)
-      // y solo si el objetivo es un CHOFER (implícito si el cliente está mirando detalles de oferta)
-      whereClause = {
-        ...whereClause,
-        fromUser: { role: 'CLIENTE' },
-      };
-    }
-    // Si es CHOFER, ve todo (reseñas de clientes y de otros choferes)
-
-    return this.prisma.rating.findMany({
-      where: whereClause,
+    const ratings = await this.prisma.rating.findMany({
+      where: { toUserId: targetUserId },
       include: {
-        fromUser: {
-          include: { profile: true },
+        fromUser: { include: { profile: true } },
+        ride: {
+          include: {
+            ratings: { select: { id: true } }, // Traemos IDs para contar
+          },
         },
       },
       orderBy: { createdAt: 'desc' },
+    });
+
+    // Filtrar por visibilidad:
+    // Mostrar si: (Suma de ratings en el viaje == 2) OR (Ride finalizado hace > 48hs)
+    return ratings.filter((r) => {
+      const isMutuallyRated = r.ride.ratings.length >= 2;
+      const isOldEnough = r.ride.updatedAt <= fortyEightHoursAgo;
+
+      return isMutuallyRated || isOldEnough;
     });
   }
 
@@ -397,5 +427,15 @@ export class RidesService {
         status: true,
       },
     });
+  }
+
+  private getVisibilityFilter() {
+    const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    return {
+      OR: [
+        { ride: { ratings: { _count: { gte: 2 } } } },
+        { ride: { updatedAt: { lte: fortyEightHoursAgo } } },
+      ],
+    };
   }
 }
