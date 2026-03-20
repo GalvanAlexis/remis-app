@@ -47,6 +47,8 @@ if (__DEV__) {
       "Unauthorized request, clearing session",
       "Connected to Socket.io server",
       "Disconnected from Socket.io server",
+      "Expo Go does not support push notifications",
+      "Development builds are required",
     ];
     if (ignoredPhrases.some((phrase) => message.includes(phrase))) {
       return;

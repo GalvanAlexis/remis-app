@@ -99,7 +99,18 @@ model RideRequest {
   selectedOffer   Offer?     @relation("SelectedOffer", fields: [selectedOfferId], references: [id])
   ratings         Rating[]
 
+  // Pagos (Mercado Pago / Otros)
+  paymentStatus           PaymentStatus @default(PENDING)
+  paymentMethod           String?       // Ej: "MERCADOPAGO"
+  mercadopagoPreferenceId String?       @unique
+
   @@map("ride_requests")
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
 }
 
 model Offer {

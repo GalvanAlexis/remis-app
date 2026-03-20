@@ -25,6 +25,8 @@ export interface RideHistoryItem {
     score: number;
     comment?: string;
   };
+  paymentStatus?: "PENDING" | "PAID" | "REFUNDED";
+  paymentMethod?: string;
 }
 
 export interface HistoryResponse {
@@ -43,6 +45,11 @@ export const ridesService = {
 
   async getPendingRides(): Promise<any[]> {
     const res = await api.get("/rides/pending");
+    return res.data;
+  },
+
+  async createPaymentPreference(rideId: string): Promise<{ preferenceId: string; initPoint: string; sandboxInitPoint: string }> {
+    const res = await api.post(`/payments/preference/${rideId}`);
     return res.data;
   },
 };

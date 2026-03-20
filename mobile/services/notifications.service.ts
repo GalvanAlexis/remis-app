@@ -31,6 +31,13 @@ export async function registerForPushNotificationsAsync(): Promise<
       Constants.easConfig?.projectId;
 
     if (!projectId) {
+      if (__DEV__) {
+        const mockToken = `ExponentPushToken[DEV_MOCK_${Constants.deviceName?.toUpperCase() || "ALE"}]`;
+        console.log(
+          `[Notifications] 🛠️ No hay projectId. Usando Mock Token: ${mockToken}`,
+        );
+        return mockToken;
+      }
       console.log(
         "[Notifications] No se encontró projectId. Las notificaciones push no funcionarán sin configuración EAS.",
       );
@@ -44,7 +51,15 @@ export async function registerForPushNotificationsAsync(): Promise<
     console.log("[Notifications] Token obtenido:", token.slice(0, 40) + "...");
     return token;
   } catch (err) {
-    // Solo loguear como warning si no es un error de configuración esperable
+    // Si estamos en desarrollo y falla por falta de projectId o entorno, usamos mock
+    if (__DEV__) {
+      const mockToken = `ExponentPushToken[DEV_MOCK_${Constants.deviceName?.toUpperCase() || "ALE"}]`;
+      console.log(
+        `[Notifications] 🛠️ Usando Mock Token para desarrollo: ${mockToken}`,
+      );
+      return mockToken;
+    }
+
     const msg = err instanceof Error ? err.message : String(err);
     if (!msg.includes("projectId")) {
       console.warn("[Notifications] Error al obtener push token:", msg);

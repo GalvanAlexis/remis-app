@@ -541,6 +541,30 @@ export default function HomeScreen() {
           >
             Precio Total: ${activeRide.selectedOffer?.quotedPrice}
           </Text>
+
+          {/* Botón de Pago si está pendiente */}
+          {activeRide?.paymentStatus === 'PENDING' && (
+            <Button
+              mode="contained"
+              onPress={handlePayRide}
+              style={{ marginTop: 12, backgroundColor: '#009EE3' }} // Azul Mercado Pago
+              textColor="white"
+              icon="credit-card"
+            >
+              Pagar con Mercado Pago
+            </Button>
+          )}
+
+          {activeRide?.paymentStatus === 'PAID' && (
+            <Chip
+              icon="check-circle"
+              style={{ marginTop: 12, backgroundColor: '#4CAF50' }}
+              textStyle={{ color: 'white' }}
+            >
+              Pagado
+            </Chip>
+          )}
+
           {/* Cancelar solo disponible mientras MATCHED y no IN_PROGRESS */}
           {!isInProgress && (
             <Button
@@ -555,6 +579,26 @@ export default function HomeScreen() {
         </Card.Content>
       </Card>
     );
+  };
+
+  const handlePayRide = async () => {
+    if (!activeRide?.id) return;
+
+    try {
+      const result = await ridesService.createPaymentPreference(activeRide.id);
+      if (result.initPoint || result.sandboxInitPoint) {
+        const checkoutUrl = result.sandboxInitPoint || result.initPoint;
+        router.push({
+          pathname: '/payment',
+          params: { checkoutUrl, rideId: activeRide.id }
+        });
+      } else {
+        showError("Error", "No se pudo generar el enlace de pago.");
+      }
+    } catch (error) {
+      showError("Error", "Ocurrió un problema al conectar con Mercado Pago.");
+      console.error(error);
+    }
   };
 
   const renderClientView = () => (

@@ -6,6 +6,10 @@ import {
   RegisterDto,
 } from "../services/auth.service";
 import { useToast } from "../context/ToastContext";
+import {
+  registerForPushNotificationsAsync,
+  registerPushTokenOnServer,
+} from "../services/notifications.service";
 
 interface AuthContextData {
   user: UserProfile | null;
@@ -15,6 +19,8 @@ interface AuthContextData {
   register: (data: RegisterDto) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  getToken: () => Promise<string | null>;
+  forceUpdatePushToken: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -80,16 +86,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const isAuthenticated = !!user;
+
+  const forceUpdatePushToken = async () => {
+    if (!isAuthenticated) return;
+    try {
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        await registerPushTokenOnServer(token);
+      }
+    } catch (error) {
+      console.error("[Auth] Error forzando actualización de token:", error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isAuthenticated,
         isLoading,
         login,
         register,
         logout,
         refreshProfile,
+        getToken: authService.getToken,
+        forceUpdatePushToken,
       }}
     >
       {children}

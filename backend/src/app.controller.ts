@@ -12,7 +12,12 @@ export class AppController {
 
   @Post('debug/log')
   logMobileError(@Body() body: any) {
-    console.log('\n\n🔴🔴🔴 [MOBILE ERROR REPORT 🔴🔴🔴');
+    const { type, message } = body;
+    let icon = '⚪'; // Log por defecto
+    if (type === 'ERROR' || type === 'FATAL') icon = '🔴';
+    if (type === 'WARN') icon = '🟡';
+
+    console.log(`\n\n${icon}${icon}${icon} [MOBILE ${type} REPORT] ${icon}${icon}${icon}`);
     console.log(JSON.stringify(body, null, 2));
     console.log('--------------------------------------------------\n\n');
     return { received: true };

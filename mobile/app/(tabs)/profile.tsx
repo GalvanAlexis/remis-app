@@ -1,4 +1,5 @@
 import React from "react";
+import { useState } from "react";
 import { View, StyleSheet, ScrollView, Alert, Image } from "react-native";
 import { Text, Card, Button, Divider, Chip, Avatar } from "react-native-paper";
 import { useAuth } from "../../hooks/useAuth";
@@ -8,7 +9,8 @@ import { ThemeSelector } from "../../components/ThemeSelector";
 
 export default function ProfileScreen() {
   const { colors, isDark } = useAppTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, getToken, forceUpdatePushToken } = useAuth();
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const handleLogout = () => {
     Alert.alert("Cerrar Sesión", "¿Estás seguro que deseas salir?", [
@@ -19,6 +21,47 @@ export default function ProfileScreen() {
         onPress: logout,
       },
     ]);
+  };
+
+  const handleForceSync = async () => {
+    setIsSyncing(true);
+    try {
+      await forceUpdatePushToken();
+      Alert.alert("✅ Vinculado", "Tu dispositivo (Mock) ha sido vinculado para notificaciones.");
+    } catch (error) {
+      Alert.alert("Error", "No se pudo vincular el dispositivo.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleTestPush = async () => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        Alert.alert("Error", "No se encontró el token de sesión");
+        return;
+      }
+
+      console.log("🟡 Iniciando disparo de notificación de prueba...");
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/notifications/send-test`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        Alert.alert("✅ Éxito", "Notificación de prueba disparada. Revisa los logs del servidor para ver el resultado técnico.");
+      } else {
+        Alert.alert("Error", data.message || "Error al enviar la notificación");
+      }
+    } catch (error) {
+      console.error("Test Push Error:", error);
+      Alert.alert("Error", "Error de conexión con el servidor");
+    }
   };
 
   if (!user) {
@@ -200,6 +243,27 @@ export default function ProfileScreen() {
       </Card>
 
       <Button
+        mode="text"
+        onPress={handleForceSync}
+        loading={isSyncing}
+        disabled={isSyncing}
+        style={{ marginBottom: 10 }}
+        icon="sync"
+      >
+        Vincular App para Notificaciones
+      </Button>
+
+      <Button
+        mode="outlined"
+        onPress={handleTestPush}
+        style={[styles.testButton, { borderColor: colors.primary }]}
+        textColor={colors.primary}
+        icon="bell-ring"
+      >
+        Probar Notificaciones (Push)
+      </Button>
+
+      <Button
         mode="contained"
         onPress={handleLogout}
         style={styles.logoutButton}
@@ -271,6 +335,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingVertical: 5,
     borderRadius: 10,
+  },
+  testButton: {
+    marginBottom: 10,
+    borderRadius: 10,
+    borderWidth: 1,
   },
   footer: {
     alignItems: "center",
