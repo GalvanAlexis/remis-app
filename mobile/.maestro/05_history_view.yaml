@@ -1,0 +1,7 @@
+appId: host.exp.exponent
+---
+# Test: Validar pantalla de Historial de viajes
+# Prerequisito: usuario logueado, en cualquier pantalla (se valida la barra inferior)
+- assertVisible: "Historial"
+- assertVisible: "Todos"
+- assertVisible: "Siempre"

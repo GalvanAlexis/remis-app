@@ -7,7 +7,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test:services": "jest --testPathPattern='__tests__/services/' --runInBand --forceExit"
+    "test:services": "jest --testPathPattern='__tests__/services/' --runInBand --forceExit",
+    "test:screens": "jest --testPathPattern='__tests__/screens/' --runInBand --forceExit",
+    "test:all": "jest --runInBand --forceExit"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

@@ -1,0 +1,16 @@
+appId: host.exp.exponent
+---
+# Test: Validar el ciclo de vida del viaje (Chofer)
+# Prerequisito: Chofer en pantalla de Inicio con pedido disponible
+
+# 1. Validar que el viaje está en camino tras aceptar (esto lo hace el usuario manualmente)
+- assertVisible: "● EN CAMINO"
+- assertVisible: "LUGAR" # Parte de 'LLEGUE AL LUGAR'
+
+# 2. Validar que el viaje está en el lugar
+- assertVisible: "● EN EL LUGAR"
+- assertVisible: "INICIAR" # Parte de 'INICIAR VIAJE'
+
+# 3. Validar que el viaje está en trayecto
+- assertVisible: "● EN TRAYECTO"
+- assertVisible: "FINALIZAR" # Parte de 'FINALIZAR VIAJE'

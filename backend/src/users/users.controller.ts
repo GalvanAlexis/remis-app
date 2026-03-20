@@ -7,6 +7,8 @@ import {
   Param,
   UseGuards,
   Request,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateProfileDto, UploadDriverDocumentsDto } from './dto/users.dto';

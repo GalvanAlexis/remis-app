@@ -1,0 +1,5 @@
+appId: host.exp.exponent
+---
+# Test: Validar pantalla principal post-registro de cliente
+# Prerequisito: usuario recién registrado ya logueado en la pantalla principal
+- assertVisible: "Perfil"

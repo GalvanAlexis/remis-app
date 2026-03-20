@@ -81,6 +81,7 @@ export default function LoginScreen() {
               elevation={2}
             >
               <TextInput
+                testID="email-input"
                 label="Nombre de usuario"
                 value={username}
                 onChangeText={setUsername}
@@ -93,6 +94,7 @@ export default function LoginScreen() {
               />
 
               <TextInput
+                testID="password-input"
                 label="Contraseña"
                 value={password}
                 onChangeText={setPassword}
@@ -100,20 +102,25 @@ export default function LoginScreen() {
                 secureTextEntry
                 style={styles.input}
                 textColor="#FFFFFF"
+                onSubmitEditing={handleLogin}
               />
 
-              <Button
-                mode="contained"
-                onPress={handleLogin}
-                loading={loading}
-                disabled={loading}
-                style={styles.button}
-                contentStyle={styles.buttonContent}
-                buttonColor={colors.primary}
-                textColor="white"
-              >
-                Ingresar
-              </Button>
+              <View testID="login-button-container" accessible={true} accessibilityLabel="login-btn">
+                <Button
+                  testID="login-button"
+                  accessibilityLabel="Boton Ingresar"
+                  mode="contained"
+                  onPress={handleLogin}
+                  loading={loading}
+                  disabled={loading}
+                  style={styles.button}
+                  contentStyle={styles.buttonContent}
+                  buttonColor={colors.primary}
+                  textColor="white"
+                >
+                  Ingresar
+                </Button>
+              </View>
 
               <Button
                 mode="text"

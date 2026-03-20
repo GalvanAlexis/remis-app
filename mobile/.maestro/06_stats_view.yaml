@@ -1,0 +1,6 @@
+appId: host.exp.exponent
+---
+# Test: Validar pantalla de Estadísticas
+# Prerequisito: usuario CHOFER logueado y en cualquier pantalla
+- assertVisible: "Viajes totales"
+- assertVisible: "Este mes"

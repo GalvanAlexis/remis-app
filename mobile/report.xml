@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="007448C112338511" tests="1" failures="1" time="83.0">
+    <testcase id="01_auth_login" name="01_auth_login" classname="01_auth_login" time="83.0" status="ERROR">
+      <failure>Assertion is false: "Destino" is visible</failure>
+    </testcase>
+  </testsuite>
+</testsuites>

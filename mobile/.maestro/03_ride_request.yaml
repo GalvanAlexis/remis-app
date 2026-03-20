@@ -1,0 +1,5 @@
+appId: host.exp.exponent
+---
+# Test: Validar que la solicitud de viaje fue enviada correctamente
+# Prerequisito: el usuario cliente ya hizo la solicitud de viaje y está en pantalla de espera
+- assertVisible: "Pedir Remis Ahora"

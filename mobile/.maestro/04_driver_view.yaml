@@ -1,0 +1,6 @@
+appId: host.exp.exponent
+---
+# Test: Validar pantalla principal del chofer
+# Prerequisito: usuario logueado como CHOFER (chofer@remis.com)
+- assertVisible: "Modo Chofer"
+- assertVisible: "Solo clientes registrados"

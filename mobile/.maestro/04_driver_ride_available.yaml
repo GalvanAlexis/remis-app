@@ -1,0 +1,6 @@
+appId: host.exp.exponent
+---
+# Test: Validar que el chofer ve pedidos disponibles para responder
+# Prerequisito: usuario CHOFER logueado y EN LINEA con al menos un pedido pendiente visible
+- assertVisible: "Modo Chofer"
+- assertVisible: "RESPONDER"

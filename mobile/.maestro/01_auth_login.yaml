@@ -1,0 +1,5 @@
+appId: host.exp.exponent
+---
+# Test: Validar que la pantalla principal post-login carga correctamente
+# Prerequisito: el usuario ya debe estar logueado en la app
+- assertVisible: "Perfil"

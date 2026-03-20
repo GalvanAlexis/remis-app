@@ -1,0 +1,183 @@
+ÔùÅ Validation Warning:
+
+  Unknown option "testPathPattern" with value ["__tests__/services/"] was found.
+  This is probably a typing mistake. Fixing it will remove this message.
+
+  Configuration Documentation:
+  https://jestjs.io/docs/configuration
+
+ÔùÅ Validation Warning:
+
+  Unknown option "testPathPattern" with value ["__tests__/services/"] was found.
+  This is probably a typing mistake. Fixing it will remove this message.
+
+  Configuration Documentation:
+  https://jestjs.io/docs/configuration
+
+PASS __tests__/services/api.service.test.ts
+  api.ts ÔÇö Request interceptor
+    ÔêÜ agrega Bearer token si existe en SecureStore (4 ms)
+    ÔêÜ no modifica headers si no hay token (1 ms)
+  api.ts ÔÇö Response interceptor
+    ÔêÜ pasa respuestas exitosas sin modificar (1 ms)
+    ÔêÜ en 401 con _retry=true: no vuelve a intentar refresh (previene loop) (2 ms)
+    ÔêÜ errores no-401 se propagan sin intentar refresh (1 ms)
+    ÔêÜ en 401 sin refresh token: limpia sesi├│n y emite SESSION_EXPIRED (2 ms)
+    ÔêÜ en 401 sin _retry: intenta refresh con los tokens guardados y actualiza SecureStore (2 ms)
+
+  console.log
+    Connected to Socket.io server (Authenticated)
+
+      at log (services/socket.service.ts:26:15)
+
+  console.log
+    Connected to Socket.io server (Authenticated)
+
+      at log (services/socket.service.ts:26:15)
+
+  console.log
+    Connected to Socket.io server (Authenticated)
+
+      at log (services/socket.service.ts:26:15)
+
+  console.log
+    Connected to Socket.io server (Authenticated)
+
+      at log (services/socket.service.ts:26:15)
+
+PASS __tests__/services/socket.service.test.ts
+  socketService.connect()
+    ÔêÜ debe llamar a io() con el token en auth (1 ms)
+    ÔêÜ debe registrar listeners de connect, disconnect y connect_error (1 ms)
+    ÔêÜ isConnected() empieza en false antes de conectarse
+    ÔêÜ isConnected() retorna true despu├®s del evento "connect" (15 ms)
+  socketService.disconnect()
+    ÔêÜ debe llamar socket.disconnect() y limpiar el estado (4 ms)
+  socketService.emit()
+    ÔêÜ debe emitir si est├í conectado (2 ms)
+    ÔêÜ no debe emitir si no est├í conectado (muestra warn) (1 ms)
+  socketService.request()
+    ÔêÜ resuelve con null si no est├í conectado
+    ÔêÜ emite y resuelve con la respuesta del callback (ACK) si est├í conectado (1 ms)
+
+  console.log
+    [Notifications] Permiso denegado por el usuario
+
+      at log (services/notifications.service.ts:22:13)
+
+  console.log
+    [Notifications] Permiso denegado por el usuario
+
+      at log (services/notifications.service.ts:22:13)
+
+  console.log
+    [Notifications] Token obtenido: ExponentPushToken[abc123XYZ]...
+
+      at log (services/notifications.service.ts:30:13)
+
+  console.warn
+    [Notifications] No se pudo obtener token push: Not a physical device
+
+    [0m [90m 33 |[39m     [90m// Com├║n en simuladores iOS donde push tokens no est├ín disponibles[39m
+     [90m 34 |[39m     [36mconst[39m msg [33m=[39m err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage [33m:[39m [33mString[39m(err)[33m;[39m
+    [31m[1m>[22m[39m[90m 35 |[39m     console[33m.[39mwarn([32m"[Notifications] No se pudo obtener token push:"[39m[33m,[39m msg)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 36 |[39m     [36mreturn[39m [36mnull[39m[33m;[39m
+     [90m 37 |[39m   }
+     [90m 38 |[39m }[0m
+
+      at warn (services/notifications.service.ts:35:13)
+          at Generator.throw (<anonymous>)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _throw (node_modules/@babel/runtime/helpers/asyncToGenerator.js:20:9)
+
+  console.log
+    [Notifications] Token registrado en el servidor
+
+      at log (services/notifications.service.ts:49:13)
+
+  console.warn
+    [Notifications] No se pudo registrar el token: Error: Server error
+        at Object.<anonymous> (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\__tests__\services\notifications.service.test.ts:76:40)
+        at Generator.next (<anonymous>)
+        at asyncGeneratorStep (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\@babel\runtime\helpers\asyncToGenerator.js:3:17)
+        at _next (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\@babel\runtime\helpers\asyncToGenerator.js:17:9)
+        at C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\@babel\runtime\helpers\asyncToGenerator.js:22:7
+        at new Promise (<anonymous>)
+        at Object.<anonymous> (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\@babel\runtime\helpers\asyncToGenerator.js:14:12)
+        at Promise.then.completed (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\jest-circus\build\utils.js:298:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\jest-circus\build\utils.js:231:10)
+        at _callCircusTest (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\jest-circus\build\run.js:316:40)
+        at _runTest (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\jest-circus\build\run.js:252:3)
+        at _runTestsForDescribeBlock (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\jest-circus\build\run.js:126:9)
+        at _runTestsForDescribeBlock (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\jest-circus\build\run.js:121:9)
+        at run (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\jest-circus\build\run.js:71:3)
+        at runAndTransformResultsToJestFormat (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\jest-circus\build\legacy-code-todo-rewrite\jestAdapterInit.js:122:21)
+        at jestAdapter (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\jest-circus\build\legacy-code-todo-rewrite\jestAdapter.js:79:19)
+        at runTestInternal (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\jest-runner\build\runTest.js:367:16)
+        at runTest (C:\Users\PC Blado\Desktop\AIDO\2-Proyectos\Remis\mobile\node_modules\jest-runner\build\runTest.js:444:34)
+
+    [0m [90m 50 |[39m   } [36mcatch[39m (err) {
+     [90m 51 |[39m     [90m// Fallo silencioso ÔÇö las push son opcionales, no deben bloquear el flujo[39m
+    [31m[1m>[22m[39m[90m 52 |[39m     console[33m.[39mwarn([32m"[Notifications] No se pudo registrar el token:"[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 53 |[39m   }
+     [90m 54 |[39m }
+     [90m 55 |[39m[0m
+
+      at warn (services/notifications.service.ts:52:13)
+          at Generator.throw (<anonymous>)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _throw (node_modules/@babel/runtime/helpers/asyncToGenerator.js:20:9)
+
+PASS __tests__/services/notifications.service.test.ts
+  registerForPushNotificationsAsync()
+    ÔêÜ devuelve null si el permiso ya est├í denegado (2 ms)
+    ÔêÜ pide permiso si no estaba granted y retorna null si el usuario rechaza (1 ms)
+    ÔêÜ devuelve el token si el permiso es granted (sin pedir de nuevo) (1 ms)
+    ÔêÜ devuelve null silenciosamente si getExpoPushTokenAsync lanza error (3 ms)
+  registerPushTokenOnServer()
+    ÔêÜ debe llamar a POST /notifications/register-token con el token (1 ms)
+    ÔêÜ no lanza si el servidor falla ÔÇö fallo silencioso (8 ms)
+  setupNotificationHandler()
+    ÔêÜ debe llamar a Notifications.setNotificationHandler
+    ÔêÜ el handler devuelve shouldShowAlert: true
+
+PASS __tests__/services/auth.service.test.ts
+  authService.login()
+    ÔêÜ debe llamar a POST /auth/login y guardar tokens en SecureStore (1 ms)
+  authService.register()
+    ÔêÜ debe llamar a POST /auth/register y guardar tokens en SecureStore
+  authService.logout()
+    ÔêÜ debe llamar a POST /auth/logout y borrar SecureStore (1 ms)
+    ÔêÜ debe borrar SecureStore incluso si la llamada al servidor falla
+  authService ÔÇö getters de SecureStore
+    ÔêÜ getToken() debe leer "token" de SecureStore (1 ms)
+    ÔêÜ getRefreshToken() debe leer "refresh_token" de SecureStore
+    ÔêÜ getUserId() debe leer "user_id" de SecureStore
+  authService.saveNewTokens()
+    ÔêÜ debe guardar los 3 valores en SecureStore (1 ms)
+
+PASS __tests__/services/rides.service.test.ts
+  ridesService.getHistory()
+    ÔêÜ debe llamar a GET /rides/history con page y limit correctos (1 ms)
+    ÔêÜ usa page=1 y limit=20 como defaults (1 ms)
+    ÔêÜ puede usar page y limit personalizados
+  ridesService.getPendingRides()
+    ÔêÜ debe llamar a GET /rides/pending y retornar el array
+    ÔêÜ retorna array vac├¡o si no hay viajes pendientes (1 ms)
+
+PASS __tests__/services/users.service.test.ts
+  usersService.getProfile()
+    ÔêÜ debe llamar a GET /users/profile y retornar el perfil (1 ms)
+  usersService.updateProfile()
+    ÔêÜ debe llamar a PUT /users/profile con los datos actualizados (1 ms)
+    ÔêÜ puede actualizar solo algunos campos (partial update)
+
+Test Suites: 6 passed, 6 total
+Tests:       40 passed, 40 total
+Snapshots:   0 total
+Time:        2.044 s
+Ran all test suites matching /__tests__\\services\\/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

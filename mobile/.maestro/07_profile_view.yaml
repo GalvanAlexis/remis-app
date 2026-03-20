@@ -1,0 +1,7 @@
+appId: host.exp.exponent
+---
+# Test: Validar pantalla de Perfil
+# Prerequisito: usuario logueado en cualquier pantalla
+- assertVisible: "Datos del Vehículo"
+- assertVisible: "Preferencias de Estilo"
+- assertVisible: "Ejecutivo"
