@@ -22,6 +22,8 @@ const EXECUTIVE_COLORS = {
   surface: "#FFFFFF",
   text: "#121212",
   divider: "#E0E0E0",
+  onPrimary: "#FFFFFF",
+  onSecondary: "#000000",
 };
 
 export default function WelcomeScreen() {
@@ -93,7 +95,7 @@ export default function WelcomeScreen() {
                 { backgroundColor: EXECUTIVE_COLORS.secondary },
               ]}
               contentStyle={styles.buttonContent}
-              labelStyle={[styles.buttonLabel, { color: "#fff" }]}
+              labelStyle={[styles.buttonLabel, { color: EXECUTIVE_COLORS.onSecondary }]}
             >
               RESERVAR AHORA
             </Button>
@@ -106,7 +108,7 @@ export default function WelcomeScreen() {
                 { backgroundColor: EXECUTIVE_COLORS.primary },
               ]}
               contentStyle={styles.buttonContent}
-              labelStyle={[styles.buttonLabel, { color: "#fff" }]}
+              labelStyle={[styles.buttonLabel, { color: EXECUTIVE_COLORS.onPrimary }]}
             >
               CREAR CUENTA
             </Button>

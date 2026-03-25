@@ -939,7 +939,7 @@ export default function HomeScreen() {
                 ? "● EN EL LUGAR"
                 : "● EN CAMINO"}
           </Text>
-          <Text variant="bodyLarge" style={{ color: "#FFFFFF" }}>
+          <Text variant="bodyLarge" style={{ color: colors.onPrimary }}>
             Cliente:{" "}
             {activeRide.client?.profile?.nombre ||
               activeRide.guestName ||
@@ -1333,7 +1333,7 @@ export default function HomeScreen() {
                 )}
               </ScrollView>
             ) : (
-              <Text style={{ color: "#FFFFFF" }}>Cargando...</Text>
+              <Text style={{ color: colors.onPrimary }}>Cargando...</Text>
             )}
           </Dialog.Content>
           <Dialog.Actions>

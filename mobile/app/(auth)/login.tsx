@@ -101,7 +101,7 @@ export default function LoginScreen() {
                 mode="flat"
                 secureTextEntry
                 style={styles.input}
-                textColor="#FFFFFF"
+                textColor={colors.onPrimary}
                 onSubmitEditing={handleLogin}
               />
 
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   },
   appTitle: {
     fontWeight: "900",
-    color: "#FFFFFF",
+    color: "white", // Se mantiene white temporal si forma parte de un SVG path absoluto (hasta refactor)
     letterSpacing: 2,
   },
   welcomeText: {

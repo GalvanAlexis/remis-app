@@ -27,6 +27,9 @@ interface ThemeColors {
   divider: string;
   placeholder: string;
   error: string;
+  onPrimary: string;
+  onSecondary: string;
+  onError: string;
 }
 
 interface ThemeContextType {
@@ -47,7 +50,10 @@ const Themes: Record<ThemeType, ThemeColors> = {
     accent: "#C5A059",
     divider: "#E0E0E0",
     placeholder: "#757575",
-    error: "#B00020",
+    error: "#DC2626", // Refinado para pasar AA WCAG contra el fondo blanco original
+    onPrimary: "#FFFFFF",
+    onSecondary: "#000000",
+    onError: "#FFFFFF",
   },
   NOIR: {
     primary: "#03DAC6", // Teal accent
@@ -60,6 +66,9 @@ const Themes: Record<ThemeType, ThemeColors> = {
     divider: "#333333",
     placeholder: "#999999",
     error: "#CF6679",
+    onPrimary: "#121212",
+    onSecondary: "#121212",
+    onError: "#121212",
   },
   HERITAGE: {
     primary: "#4E0B0B", // Deep Burgundy
@@ -72,6 +81,9 @@ const Themes: Record<ThemeType, ThemeColors> = {
     divider: "#D7CCC8",
     placeholder: "#8D6E63",
     error: "#B00020",
+    onPrimary: "#FFFFFF",
+    onSecondary: "#FFFFFF",
+    onError: "#FFFFFF",
   },
 };
 
@@ -158,6 +170,9 @@ export const getPaperTheme = (type: ThemeType) => {
       surface: customColors.surface,
       onSurface: customColors.onSurface,
       error: customColors.error,
+      onError: customColors.onError,
+      onPrimary: customColors.onPrimary,
+      onSecondary: customColors.onSecondary,
       outline: customColors.divider,
       placeholder: customColors.placeholder,
     },

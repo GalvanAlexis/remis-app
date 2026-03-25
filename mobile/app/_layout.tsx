@@ -21,6 +21,28 @@ import {
   registerPushTokenOnServer,
   setupNotificationHandler,
 } from "../services/notifications.service";
+import { Text, TextInput } from "react-native";
+
+interface TextWithDefaultProps extends Text {
+  defaultProps?: { allowFontScaling?: boolean; maxFontSizeMultiplier?: number };
+}
+interface TextInputWithDefaultProps extends TextInput {
+  defaultProps?: { allowFontScaling?: boolean; maxFontSizeMultiplier?: number };
+}
+
+// Configurar font-scaling global estricto para Accesibilidad Visual
+// Garantiza compatibilidad Lupa WCAG sin reventar layouts (Límite dinámico 130%)
+((Text as unknown) as TextWithDefaultProps).defaultProps =
+  ((Text as unknown) as TextWithDefaultProps).defaultProps || {};
+((Text as unknown) as TextWithDefaultProps).defaultProps!.allowFontScaling = true;
+((Text as unknown) as TextWithDefaultProps).defaultProps!.maxFontSizeMultiplier =
+  1.3;
+
+((TextInput as unknown) as TextInputWithDefaultProps).defaultProps =
+  ((TextInput as unknown) as TextInputWithDefaultProps).defaultProps || {};
+((TextInput as unknown) as TextInputWithDefaultProps).defaultProps!.allowFontScaling = true;
+((TextInput as unknown) as TextInputWithDefaultProps).defaultProps!.maxFontSizeMultiplier =
+  1.3;
 
 // Configurar handler de notificaciones en foreground (muestra alert + sonido)
 setupNotificationHandler();

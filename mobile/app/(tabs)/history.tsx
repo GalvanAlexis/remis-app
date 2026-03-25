@@ -278,7 +278,7 @@ export default function HistoryScreen() {
               },
             ]}
             textStyle={{
-              color: filter === f ? (colors.primary === "#FFFFFF" ? "#000" : "#FFF") : colors.text,
+              color: filter === f ? colors.onPrimary : colors.text,
               fontSize: 12,
             }}
           >
@@ -301,7 +301,7 @@ export default function HistoryScreen() {
               },
             ]}
             textStyle={{
-              color: period === p ? (colors.secondary === "#FFFFFF" ? "#000" : "#FFF") : colors.text,
+              color: period === p ? colors.onSecondary : colors.text,
               fontSize: 12,
             }}
           >
