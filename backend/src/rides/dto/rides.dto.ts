@@ -6,6 +6,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
+import { Sanitize } from '../../common/decorators/sanitize.decorator';
 
 export class CreateRideRequestDto {
   @IsOptional()
@@ -14,6 +15,7 @@ export class CreateRideRequestDto {
 
   @IsOptional()
   @IsString()
+  @Sanitize()
   guestName?: string;
 
   @IsOptional()
@@ -22,12 +24,15 @@ export class CreateRideRequestDto {
 
   @IsOptional()
   @IsString()
+  @Sanitize()
   detalle?: string;
 
   @IsString()
+  @Sanitize()
   originAddress: string;
 
   @IsString()
+  @Sanitize()
   destAddress: string;
 }
 
@@ -84,5 +89,6 @@ export class RatingDto {
 
   @IsOptional()
   @IsString()
+  @Sanitize()
   comment?: string;
 }

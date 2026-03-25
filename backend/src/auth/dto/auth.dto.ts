@@ -12,11 +12,13 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Role } from '@prisma/client';
+import { Sanitize } from '../../common/decorators/sanitize.decorator';
 
 export class RegisterDto {
   @IsString()
   @MinLength(3)
   @MaxLength(30)
+  @Sanitize()
   username: string;
 
   @IsString()
@@ -29,11 +31,13 @@ export class RegisterDto {
   @IsString()
   @MinLength(2)
   @MaxLength(50)
+  @Sanitize()
   nombre: string;
 
   @IsString()
   @MinLength(2)
   @MaxLength(50)
+  @Sanitize()
   apellido: string;
 
   // DNI: 7 u 8 dígitos numéricos
@@ -45,6 +49,7 @@ export class RegisterDto {
   @IsString()
   @IsOptional()
   @MaxLength(100)
+  @Sanitize()
   direccion?: string;
 
   @IsString()
@@ -93,6 +98,7 @@ export class RegisterDto {
   @IsString()
   @MinLength(3, { message: 'El modelo debe tener al menos 3 caracteres' })
   @MaxLength(60)
+  @Sanitize()
   vehicleModel?: string;
 
   // Patente argentina: formato ABC123 (viejo) o AB123CD (nuevo Mercosur)
@@ -107,6 +113,7 @@ export class RegisterDto {
   @Matches(/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]{3,20}$/, {
     message: 'El color debe contener solo letras (3-20 caracteres)',
   })
+  @Sanitize()
   vehicleColor?: string;
 }
 
