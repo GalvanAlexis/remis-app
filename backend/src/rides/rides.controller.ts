@@ -5,7 +5,9 @@ import {
   Request,
   UseGuards,
   ForbiddenException,
+  UseInterceptors,
 } from '@nestjs/common';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 import { RidesService } from './rides.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -22,6 +24,7 @@ export class RidesController {
    */
   @Get('history')
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(CacheInterceptor)
   getHistory(
     @Request() req: any,
     @Query('page') page = '1',
@@ -41,6 +44,7 @@ export class RidesController {
    */
   @Get('pending')
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(CacheInterceptor)
   getPendingRides(@Request() req: any) {
     if (req.user.role !== 'CHOFER') {
       throw new ForbiddenException(
