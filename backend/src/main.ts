@@ -5,6 +5,7 @@ import { IoAdapter } from '@nestjs/platform-socket.io';
 import { WinstonModule, utilities as nestWinstonModuleUtilities } from 'nest-winston';
 import * as winston from 'winston';
 import 'winston-daily-rotate-file';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -46,9 +47,27 @@ async function bootstrap() {
   // Enable Socket.IO adapter
   app.useWebSocketAdapter(new IoAdapter(app));
 
-  // Enable CORS for mobile app
+  // Security HTTP Headers (Helmet)
+  app.use(helmet());
+
+  // Strict CORS policy
   app.enableCors({
-    origin: true, // Allow all origins in development. Specify allowed origins in production
+    origin: (origin, callback) => {
+      // Orígenes web permitidos (para un futuro dashboard administrativo FrontEnd)
+      const allowedOrigins = [
+        'http://localhost:5173', 
+        'http://localhost:3000', 
+        'https://tu-dashboard-remis.com'
+      ];
+      
+      // Permitir a la Mobile App (cuyo Origin suele ser nulo en entorno cerrado) 
+      // y validar los requests web entrantes
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Bloqueado por política CORS estricta: Origen no autorizado'));
+      }
+    },
     credentials: true,
   });
 
