@@ -17,6 +17,7 @@ import { useFocusEffect } from "expo-router";
 import { useAuth } from "../../hooks/useAuth";
 import { useAppTheme } from "../../context/ThemeContext";
 import { ridesService, RideHistoryItem } from "../../services/rides.service";
+import { Skeleton } from "../../components/ui/Skeleton";
 
 type FilterStatus = "TODOS" | "COMPLETED" | "CANCELLED";
 type FilterPeriod = "TODO" | "HOY" | "SEMANA" | "MES";
@@ -165,6 +166,35 @@ function RideCard({
   );
 }
 
+function SkeletonCard({ colors }: { colors: any }) {
+  return (
+    <Surface
+      style={[styles.card, { backgroundColor: colors.surface, marginBottom: 12 }]}
+      elevation={1}
+    >
+      <View style={styles.cardHeader}>
+        <View style={{ gap: 6, flex: 1 }}>
+          <Skeleton width={120} height={14} />
+          <Skeleton width={180} height={16} />
+        </View>
+        <Skeleton width={80} height={20} borderRadius={8} />
+      </View>
+      <Divider style={{ backgroundColor: colors.divider, marginVertical: 10 }} />
+      <View style={styles.route}>
+        <View style={styles.routeRow}>
+          <Text style={[styles.routeDot, { color: colors.primary }]}>●</Text>
+          <Skeleton width="80%" height={16} />
+        </View>
+        <View style={[styles.routeLine, { backgroundColor: colors.divider }]} />
+        <View style={styles.routeRow}>
+          <Text style={[styles.routeDot, { color: colors.error }]}>●</Text>
+          <Skeleton width="90%" height={16} />
+        </View>
+      </View>
+    </Surface>
+  );
+}
+
 export default function HistoryScreen() {
   const { colors } = useAppTheme();
   const { user } = useAuth();
@@ -281,8 +311,10 @@ export default function HistoryScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={styles.list}>
+          {[1, 2, 3, 4, 5].map((key) => (
+            <SkeletonCard key={key} colors={colors} />
+          ))}
         </View>
       ) : error ? (
         <View style={styles.centered}>

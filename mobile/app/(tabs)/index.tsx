@@ -26,6 +26,7 @@ import { socketService } from "../../services/socket.service";
 import { ridesService } from "../../services/rides.service";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useSocket } from "../../hooks/useSocket";
+import { Skeleton } from "../../components/ui/Skeleton";
 import { useToast } from "../../context/ToastContext";
 import { RatingStars } from "../../components/RatingStars";
 
@@ -89,6 +90,28 @@ const RideTimerDisplay = ({
   );
 };
 
+function SkeletonOfferCard({ colors }: { colors: any }) {
+  return (
+    <Surface style={[styles.offerCard, { backgroundColor: colors.surface }]} elevation={0}>
+      <View style={styles.rideHeader}>
+        <Skeleton width={120} height={32} borderRadius={16} />
+        <View style={{ alignItems: "flex-end", gap: 6 }}>
+          <Skeleton width={50} height={14} />
+          <Skeleton width={80} height={16} />
+        </View>
+      </View>
+      <View style={{ gap: 16, marginVertical: 12 }}>
+        <Skeleton width="80%" height={24} />
+        <Skeleton width="90%" height={24} />
+      </View>
+      <View style={[styles.offerActions, { marginTop: 8 }]}>
+        <Skeleton width={100} height={36} borderRadius={20} />
+        <Skeleton width={120} height={36} borderRadius={20} />
+      </View>
+    </Surface>
+  );
+}
+
 export default function HomeScreen() {
   const { theme, colors, isDark } = useAppTheme();
   const { user, isAuthenticated } = useAuth();
@@ -114,6 +137,7 @@ export default function HomeScreen() {
   const [isOnline, setIsOnline] = useState(false);
   const [onlyRegisteredClients, setOnlyRegisteredClients] = useState(false);
   const [rideRequests, setRideRequests] = useState<any[]>([]);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(false);
 
   // Dialog State (Offer/Details)
   const [offerDialogVisible, setOfferDialogVisible] = useState(false);
@@ -276,11 +300,13 @@ export default function HomeScreen() {
       if (isOnline) {
         // Pequeño retardo (debounce) para asegurar que el DB termine de guardar la preferencia
         // del filtro "onlyRegistered" antes de solicitar la descarga de nuevos viajes pendientes.
+        setIsLoadingRequests(true);
         const timeout = setTimeout(() => {
           ridesService
             .getPendingRides()
             .then((data) => setRideRequests(data))
-            .catch((e) => console.error("Error fetching pending rides:", e));
+            .catch((e) => console.error("Error fetching pending rides:", e))
+            .finally(() => setIsLoadingRequests(false));
         }, 300);
         return () => clearTimeout(timeout);
       } else {
@@ -1021,8 +1047,12 @@ export default function HomeScreen() {
               </Text>
             </View>
           )}
-          {rideRequests.map((req: any) => (
-            <Surface key={req.id} style={styles.offerCard} elevation={0}>
+          
+          {isLoadingRequests ? (
+             [1, 2, 3].map((key) => <SkeletonOfferCard key={key} colors={colors} />)
+          ) : (
+             rideRequests.map((req: any) => (
+              <Surface key={req.id} style={styles.offerCard} elevation={0}>
               <View style={styles.rideHeader}>
                 <Chip
                   icon="account"
@@ -1096,7 +1126,8 @@ export default function HomeScreen() {
                 </Button>
               </View>
             </Surface>
-          ))}
+            ))
+          )}
         </ScrollView>
       )}
     </View>
