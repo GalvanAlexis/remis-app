@@ -1,5 +1,6 @@
 import React from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { View, StyleSheet } from "react-native";
+import { TouchableScale } from "./ui/TouchableScale";
 import { Text, Surface, IconButton } from "react-native-paper";
 import { useAppTheme, ThemeType } from "../context/ThemeContext";
 
@@ -45,9 +46,9 @@ export const ThemeSelector: React.FC = () => {
       </Text>
       <View style={styles.row}>
         {THEME_OPTIONS.map((opt) => (
-          <TouchableOpacity
+          <TouchableScale
             key={opt.id}
-            onPress={() => setTheme(opt.id)}
+            onPress={() => setTheme(opt.id as ThemeType)}
             style={[
               styles.option,
               theme === opt.id && { borderColor: opt.primary, borderWidth: 3 },
@@ -99,7 +100,7 @@ export const ThemeSelector: React.FC = () => {
             >
               {opt.label}
             </Text>
-          </TouchableOpacity>
+          </TouchableScale>
         ))}
       </View>
     </View>

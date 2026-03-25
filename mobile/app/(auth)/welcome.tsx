@@ -4,8 +4,8 @@ import {
   StyleSheet,
   ImageBackground,
   Dimensions,
-  TouchableOpacity,
 } from "react-native";
+import { TouchableScale } from "../../components/ui/TouchableScale";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Text, Button, Surface } from "react-native-paper";
@@ -115,9 +115,9 @@ export default function WelcomeScreen() {
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>¿Ya tienes cuenta?</Text>
-              <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
+              <TouchableScale onPress={() => router.push("/(auth)/login")}>
                 <Text style={styles.loginLink}>Iniciar Sesión</Text>
-              </TouchableOpacity>
+              </TouchableScale>
             </View>
           </Surface>
         </View>
