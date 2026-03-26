@@ -56,18 +56,18 @@ const Themes: Record<ThemeType, ThemeColors> = {
     onError: "#FFFFFF",
   },
   NOIR: {
-    primary: "#03DAC6", // Teal accent
-    secondary: "#CFD8DC", // Silver
-    background: "#121212", // Charcoal
-    surface: "#1E1E1E", // Dark surface
+    primary: "#00E5FF", // Cyan hiper vibrante para pantallas OLED
+    secondary: "#2A2A2A", // Acento gris frío
+    background: "#000000", // True Black absoluto (Pixeles apagados OLED)
+    surface: "#121212", // MD3 Nivel 1
     text: "#FFFFFF",
     onSurface: "#E0E0E0",
-    accent: "#03DAC6",
-    divider: "#333333",
-    placeholder: "#999999",
-    error: "#CF6679",
+    accent: "#00E5FF",
+    divider: "#1E1E1E",
+    placeholder: "#666666",
+    error: "#FF5252",
     onPrimary: "#121212",
-    onSecondary: "#121212",
+    onSecondary: "#FFFFFF",
     onError: "#121212",
   },
   HERITAGE: {

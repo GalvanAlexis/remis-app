@@ -20,6 +20,7 @@ import {
   Portal,
   Dialog,
 } from "react-native-paper";
+import { BlurView } from "expo-blur";
 import { useAuth } from "../../hooks/useAuth";
 import { useRouter } from "expo-router";
 import { socketService } from "../../services/socket.service";
@@ -1197,8 +1198,13 @@ export default function HomeScreen() {
         <Dialog
           visible={detailsDialogVisible}
           onDismiss={() => setDetailsDialogVisible(false)}
-          style={{ backgroundColor: colors.surface }}
+          style={{ backgroundColor: "transparent", overflow: "hidden" }}
         >
+          <BlurView 
+            intensity={isDark ? 60 : 100} 
+            tint={isDark ? "dark" : "light"} 
+            style={StyleSheet.absoluteFill} 
+          />
           <Dialog.Title style={{ color: colors.text }}>
             {selectedOffer ? "Detalles del Chofer" : "Detalles del Pasajero"}
           </Dialog.Title>
@@ -1350,8 +1356,13 @@ export default function HomeScreen() {
         <Dialog
           visible={ratingDialogVisible}
           onDismiss={() => setRatingDialogVisible(false)}
-          style={{ backgroundColor: colors.surface }}
+          style={{ backgroundColor: "transparent", overflow: "hidden" }}
         >
+          <BlurView 
+            intensity={isDark ? 60 : 100} 
+            tint={isDark ? "dark" : "light"} 
+            style={StyleSheet.absoluteFill} 
+          />
           <Dialog.Title style={{ color: colors.text }}>
             Calificar Viaje
           </Dialog.Title>
